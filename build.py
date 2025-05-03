@@ -1,6 +1,6 @@
 import subprocess
 CC="g++"
-FLAGS=["-o1","-std=c++17"]
+FLAGS=["-o1","-std=c++17","-g", "-fno-exceptions"]
 SRC="main.cpp"
 EXE="myc"
 
