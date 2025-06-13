@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(example VERSION 0.1 LANGUAGES C CXX)
+project(mygo VERSION 0.1 LANGUAGES C CXX)
 
 enable_testing()
 
@@ -19,6 +19,8 @@ set( PROJECT_SOURCES
         ./mygo.cpp
         ./token.cpp
         ./token_stream.cpp
+        ./logging.cpp
+        ./ast.cpp
 )
 
 set(CMAKE_BUILD_TYPE Debug)

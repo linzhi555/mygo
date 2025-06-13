@@ -1,3 +1,4 @@
+#pragma once
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -5,16 +6,40 @@
 namespace mygo {
 namespace token {
 
-#define TokenList                                                              \
-  T(Dot, "."), T(Var, "var"), T(Const, "const"), T(Struct, "struct"),          \
-      T(For, "for"), T(Typedef, "type"), T(Equal, "=="), T(Assign, "="),       \
-      T(Plus, "+"), T(Sub, "-"), T(Star, "*"), T(Slash, "/"), T(Func, "func"), \
-      T(LBrace, "{"), T(RBrace, "}"), T(LParent, "("), T(RParent, ")"),        \
-      T(Comma, ","), T(Colon, ":"),
+#define TokenList     \
+  T(Dot, ".")         \
+  T(Var, "var")       \
+  T(Const, "const")   \
+  T(Struct, "struct") \
+  T(For, "for")       \
+  T(Typedef, "type")  \
+  T(Equal, "==")      \
+  T(Assign, "=")      \
+  T(Plus, "+")        \
+  T(Sub, "-")         \
+  T(Star, "*")        \
+  T(Slash, "/")       \
+  T(Func, "func")     \
+  T(LBrace, "{")      \
+  T(RBrace, "}")      \
+  T(LParent, "(")     \
+  T(RParent, ")")     \
+  T(Comma, ",")       \
+  T(Colon, ":")       \
+  T(Semicolon, ";")   \
+  K(Space, "SPACE")   \
+  K(Int, "Int")       \
+  K(Float, "Float")   \
+  K(Str, "Str")       \
+  K(Symbol, "Symbol") \
+  K(Enl, "Enl")       \
+  K(Enf, "Enf")
 
 enum class Type {
-#define T(a, b) a
+#define T(a, b) a,
+#define K(a, b) a,
   TokenList
+#undef K
 #undef T
 };
 
@@ -54,7 +79,32 @@ using CharPtr = std::vector<uint8_t>::iterator;
 
 class Value {
  public:
-  Value(Type t, int len);
+  Value() = default;
+  Value(Type t, int len) : type_(t), len_(len) {};
+  static Value CreateInt(int len, int data) {
+    Value v(Type::Int, len);
+    v.i_data_ = data;
+    return v;
+  }
+
+  static Value CreateFloat(int len, float data) {
+    Value v(Type::Float, len);
+    v.f_data_ = data;
+    return v;
+  }
+
+  static Value CreateStr(int len, std::string data) {
+    Value v(Type::Str, len);
+    v.str_data_ = data;
+    return v;
+  }
+
+  static Value CreateSymbol(int len, std::string data) {
+    Value v(Type::Symbol, len);
+    v.str_data_ = data;
+    return v;
+  }
+
   static std::optional<Value> FromChars(CharPtr cur, CharPtr end);
   Type type() { return type_; }
   std::string str() { return str_data_; }
@@ -62,6 +112,8 @@ class Value {
 
   double f() { return f_data_; }
   int i() { return i_data_; }
+
+  std::string debug();
 
  private:
   Type type_;
@@ -71,5 +123,9 @@ class Value {
   int i_data_;
 };
 
+std::ostream& operator<<(std::ostream& stream, Value v);
+std::ostream& operator<<(std::ostream& stream, Type t);
+
+std::string debug_type(token::Type t);
 }  // namespace token
 }  // namespace mygo

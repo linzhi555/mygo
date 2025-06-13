@@ -1,17 +1,18 @@
 #include <memory>
+
+#include "ast.h"
 namespace mygo {
 
 class Backend {
-    static std::unique_ptr<Backend> from_function_ast();
-    virtual void run() = 0;
+  virtual void run(ast::NodePtr<ast::Root>& root) = 0;
 };
 
 class CBackend : public Backend {
-    virtual void run() override;
+  void run(ast::NodePtr<ast::Root>& root) override;
 };
 
 class ByteCodeBackend : public Backend {
-    virtual void run() override;
+  void run(ast::NodePtr<ast::Root>& root) override;
 };
 
 }  // namespace mygo
