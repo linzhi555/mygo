@@ -8,12 +8,17 @@ namespace token {
 
 #define TokenList     \
   T(Dot, ".")         \
+  T(True, "true")     \
+  T(False, "flase")   \
   T(Var, "var")       \
   T(Const, "const")   \
   T(Struct, "struct") \
   T(For, "for")       \
+  T(If, "if")         \
   T(Typedef, "type")  \
   T(Equal, "==")      \
+  T(Less, "<")        \
+  T(Greater, ">")     \
   T(Assign, "=")      \
   T(Plus, "+")        \
   T(Sub, "-")         \

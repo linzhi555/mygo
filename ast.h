@@ -13,18 +13,22 @@ namespace ast {
 enum class Type {
   Root,
   Expr,
+  For,
+  If,
+  Function,
   Declaration,
   Assignment,
   Funcall,
   Statement,
 };
 
-//#define SKIP_SPACE(S)                                                 \
-//  while (S.Peek() && S.Peek().value().type() == token::Type::Space) { \
-//    S.Next();                                                         \
-//  }
+#define SKIP_TOKEN(S, T)                             \
+  while (S.Peek() && S.Peek().value().type() == T) { \
+    S.Next();                                        \
+  }
 
 #define EXPECT_TOKEN(S, T)            \
+  if (!S.Peek()) return std::nullopt; \
   if (S.Peek().value().type() != T) { \
     return std::nullopt;              \
   } else {                            \
@@ -86,7 +90,9 @@ class Expr : public Node {
   }
 
   static std::optional<NodePtr<Expr>> parse(TokenStream& stream);
-  static std::optional<NodePtr<Expr>> parse_l2(TokenStream& stream);
+  static std::optional<NodePtr<Expr>> parse_with_greater(TokenStream& stream);
+  static std::optional<NodePtr<Expr>> parse_with_plus(TokenStream& stream);
+  static std::optional<NodePtr<Expr>> parse_with_star(TokenStream& stream);
   static std::optional<NodePtr<Expr>> parse_atomic(TokenStream& stream);
 };
 
@@ -129,7 +135,7 @@ class Funcall : public Node {
   }
 };
 
-class Root : public Node {
+class Block : public Node {
  public:
   std::vector<std::unique_ptr<Node>> nodes_;
 
@@ -143,11 +149,76 @@ class Root : public Node {
     return res;
   }
 
-  static std::optional<std::unique_ptr<Root>> parse(TokenStream& stream);
+  static std::optional<std::unique_ptr<Block>> parse(TokenStream& stream);
 };
 
-struct Assignment {};
-struct Function {};
+using Root = Block;
+
+class Assignment : public Node {
+ public:
+  std::string var_name;
+  NodePtr<Expr> expr;
+
+  enum Type Type() override { return Type::Assignment; };
+  std::string debug() override {
+    std::string s;
+    s += "Assignment:";
+    s += var_name;
+    s += " ";
+    s += expr->debug();
+    return s;
+  };
+  static std::optional<NodePtr<Assignment>> parse(TokenStream& stream);
+};
+
+class Function : public Node {
+ public:
+  std::string func_name;
+  std::vector<std::pair<std::string, std::string>> args;
+  std::vector<std::string> returns;
+  NodePtr<Block> block;
+  enum Type Type() override { return Type::Function; };
+  std::string debug() override {
+    std::string res;
+    res += "Function:\n";
+    res += block->debug();
+    return res;
+  };
+  static std::optional<NodePtr<Function>> parse(TokenStream& stream);
+};
+
+class If : public Node {
+ public:
+  NodePtr<Expr> expr;
+  NodePtr<Block> block;
+
+  enum Type Type() override { return Type::If; };
+  std::string debug() override {
+    std::string res;
+    res += "If:\n";
+    res += expr->debug();
+    res += "\n";
+    res += block->debug();
+    return res;
+  };
+  static std::optional<NodePtr<If>> parse(TokenStream& stream);
+};
+
+class For : public Node {
+  std::vector<NodePtr<Expr>> exprs;
+  NodePtr<Block> block;
+  enum Type Type() override { return Type::For; };
+  std::string debug() override {
+    std::string res;
+    res += "For:\n";
+    for (const auto& expr : exprs) {
+      res += expr->debug();
+      res += "\n";
+    }
+    res += block->debug();
+    return res;
+  };
+};
 
 }  // namespace ast
 }  // namespace mygo

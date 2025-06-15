@@ -3,7 +3,6 @@
 #include <optional>
 #include <vector>
 
-#include "logging.h"
 namespace mygo {
 
 TokenStream::TokenStream(std::vector<uint8_t>&& src)
@@ -27,7 +26,6 @@ void TokenStream::Next() {
     if (Peek()->type() == token::Type::Space) continue;
     auto temp = Peek();
     if (temp) {
-      LOG(INFO) << "next token" << temp.value() << std::endl;
     }
     return;
   }

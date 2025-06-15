@@ -3,9 +3,6 @@
 #include <memory>
 #include <utility>
 
-#include "iostream"
-#include "logging.h"
-
 namespace mygo {
 namespace ast {
 
@@ -37,16 +34,21 @@ std::optional<NodePtr<Funcall>> Funcall::parse(TokenStream& stream) {
   return res;
 };
 
-std::optional<NodePtr<Root>> Root::parse(TokenStream& stream) {
-  auto res = std::make_unique<Root>();
+std::optional<NodePtr<Block>> Block::parse(TokenStream& stream) {
+  auto res = std::make_unique<Block>();
   while (true) {
     std::optional<NodePtr<Declaration>> decl;
     std::optional<NodePtr<Funcall>> fcall;
+    std::optional<NodePtr<If>> if_node;
+
+    SKIP_TOKEN(stream, token::Type::Enl);
 
     if ((decl = Declaration::parse(stream))) {
       res->nodes_.push_back(std::move(decl.value()));
     } else if ((fcall = Funcall::parse(stream))) {
       res->nodes_.push_back(std::move(fcall.value()));
+    } else if ((if_node = If::parse(stream))) {
+      res->nodes_.push_back(std::move(if_node.value()));
     } else {
       break;
     }
@@ -60,22 +62,16 @@ std::optional<NodePtr<Root>> Root::parse(TokenStream& stream) {
 
 std::optional<NodePtr<Declaration>> Declaration::parse(TokenStream& stream) {
   auto res = std::make_unique<Declaration>();
-  LOG(INFO) << "before var " << stream.Peek().value() << " "
-            << stream.Peek()->type() << " " << token::Type::Var << " "
-            << std::endl;
   if (stream.Peek()->type() != token::Type::Var) return std::nullopt;
   stream.Next();
 
-  LOG(INFO) << "before Symbol" << std::endl;
   if (!(stream.Peek()->type() == token::Type::Symbol)) return std::nullopt;
   res->var_name = stream.Peek()->str();
   stream.Next();
 
-  LOG(INFO) << "before equal" << stream.Peek().value() << std::endl;
   if (!(stream.Peek()->type() == token::Type::Assign)) return std::nullopt;
   stream.Next();
 
-  LOG(INFO) << "before expr" << stream.Peek().value() << std::endl;
   auto e = Expr::parse(stream);
   if (!e) return std::nullopt;
   res->expr = std::move(e.value());
@@ -83,7 +79,34 @@ std::optional<NodePtr<Declaration>> Declaration::parse(TokenStream& stream) {
 }
 
 std::optional<NodePtr<Expr>> Expr::parse(TokenStream& stream) {
-  auto expr0 = Expr::parse_l2(stream);
+  return Expr::parse_with_greater(stream);
+}
+
+std::optional<NodePtr<Expr>> Expr::parse_with_greater(TokenStream& stream) {
+  auto expr0 = Expr::parse_with_plus(stream);
+  if (!expr0) return std::nullopt;
+
+  auto t = stream.Peek()->type();
+  if (t != token::Type::Greater && t != token::Type::Less &&
+      t != token::Type::Equal) {
+    return expr0;
+  }
+
+  stream.Next();
+
+  auto multi = std::make_unique<Expr>();
+
+  auto expr1 = Expr::parse_with_plus(stream);
+  if (!expr1) return std::nullopt;
+
+  multi->ops.push_back(t);
+  multi->exprs.push_back(std::move(expr0.value()));
+  multi->exprs.push_back(std::move(expr1.value()));
+  return multi;
+}
+
+std::optional<NodePtr<Expr>> Expr::parse_with_plus(TokenStream& stream) {
+  auto expr0 = Expr::parse_with_star(stream);
   if (!expr0) {
     return std::nullopt;
   }
@@ -100,7 +123,7 @@ std::optional<NodePtr<Expr>> Expr::parse(TokenStream& stream) {
     auto t = stream.Peek()->type();
     if (t == token::Type::Plus || t == token::Type::Sub) {
       stream.Next();
-      auto newexpr = Expr::parse_l2(stream);
+      auto newexpr = Expr::parse_with_star(stream);
       if (newexpr) {
         multi->ops.push_back(t);
         multi->exprs.push_back(std::move(newexpr.value()));
@@ -115,12 +138,11 @@ std::optional<NodePtr<Expr>> Expr::parse(TokenStream& stream) {
   return multi;
 }
 
-std::optional<NodePtr<Expr>> Expr::parse_l2(TokenStream& stream) {
+std::optional<NodePtr<Expr>> Expr::parse_with_star(TokenStream& stream) {
   auto expr0 = Expr::parse_atomic(stream);
   if (!expr0) {
     return std::nullopt;
   } else {
-    LOG(INFO) << "parse_atomic res" << expr0.value().get()->debug();
   }
 
   auto t = stream.Peek()->type();
@@ -160,16 +182,41 @@ std::optional<NodePtr<Expr>> Expr::parse_atomic(TokenStream& stream) {
   switch (v->type()) {
     case token::Type::Int:
     case token::Type::Str:
+    case token::Type::True:
+    case token::Type::False:
     case token::Type::Symbol: {
       stream.Next();
       return MakeAtomic(v.value());
     }
+
     default:
       return std::nullopt;
   }
 
   return std::nullopt;
 };
+
+std::optional<NodePtr<If>> If::parse(TokenStream& stream) {
+  EXPECT_TOKEN(stream, token::Type::If);
+  EXPECT_TOKEN(stream, token::Type::LParent);
+  std::optional<NodePtr<Expr>> expr = Expr::parse(stream);
+  if (!expr) return std::nullopt;
+  EXPECT_TOKEN(stream, token::Type::RParent);
+
+  EXPECT_TOKEN(stream, token::Type::LBrace);
+
+  SKIP_TOKEN(stream, token::Type::Enl);
+  std::optional<NodePtr<Block>> block = Block::parse(stream);
+  if (!block) return std::nullopt;
+  EXPECT_TOKEN(stream, token::Type::RBrace);
+
+  NodePtr<If> if_node = std::make_unique<If>();
+
+  if_node->expr = std::move(expr.value());
+  if_node->block = std::move(block.value());
+
+  return if_node;
+}
 
 }  // namespace ast
 }  // namespace mygo
