@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <optional>
 #include <vector>
 
 #include "ast.h"
@@ -11,6 +12,56 @@
 namespace mygo {
 
 namespace vm {
+
+namespace {
+
+bool is_logic_operator(token::Type t) {
+  switch (t) {
+    case token::Type::Greater:
+    case token::Type::Less:
+    case token::Type::Equal:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool to_number(Value v, float& data) {
+  switch (v.type) {
+    case Value::Type::Int: {
+      data = std::get<int>(v.data);
+      return true;
+    }
+
+    case Value::Type::Float: {
+      data = std::get<float>(v.data);
+      return true;
+    }
+
+    default:
+      return false;
+  }
+}
+
+std::optional<Value> operator_greater(Value v1, Value v2) {
+  float f1, f2;
+  if (to_number(v1, f1) && to_number(v2, f2)) return Value::Make(f1 > f2);
+  return std::nullopt;
+}
+
+std::optional<Value> operator_less(Value v1, Value v2) {
+  float f1, f2;
+  if (to_number(v1, f1) && to_number(v2, f2)) return Value::Make(f1 < f2);
+  return std::nullopt;
+}
+
+std::optional<Value> operator_equal(Value v1, Value v2) {
+  float f1, f2;
+  if (to_number(v1, f1) && to_number(v2, f2)) return Value::Make(f1 == f2);
+  return std::nullopt;
+}
+
+}  // namespace
 
 std::optional<Value> std_eval(VM* vm, ast::NodePtr<ast::Expr>& expr) {
   if (expr->is_atomic) {
@@ -43,27 +94,29 @@ std::optional<Value> std_eval(VM* vm, ast::NodePtr<ast::Expr>& expr) {
     }
   }
 
-  if (expr->ops.size() == 1) {
-    switch (expr->ops.at(0)) {
-      case token::Type::Greater: {
-        assert(expr->exprs.size() == 2);
-        auto v1 = std_eval(vm, expr->exprs.at(0));
-        auto v2 = std_eval(vm, expr->exprs.at(1));
-        if (v1->type == Value::Type::Int && v1->type == v2->type) {
-          bool res = std::get<int>(v1->data) > std::get<int>(v2->data);
-          return Value::Make(res);
-        }
-        break;
-      }
+  // logic operator condition
+  do {
+    if (expr->ops.size() != 1) break;
+    token::Type t = expr->ops.at(0);
+    if (!is_logic_operator(t)) break;
 
+    assert(expr->exprs.size() == 2);
+
+    auto v1 = std_eval(vm, expr->exprs.at(0));
+    auto v2 = std_eval(vm, expr->exprs.at(1));
+
+    if (!v1 || !v2) return std::nullopt;
+    switch (t) {
+      case token::Type::Greater:
+        return operator_greater(v1.value(), v2.value());
       case token::Type::Less:
+        return operator_less(v1.value(), v2.value());
       case token::Type::Equal:
-
-        break;
+        return operator_equal(v1.value(), v2.value());
       default:
-        break;
+        assert("should not reach here" == nullptr);
     }
-  }
+  } while (false);
 
   auto it = expr->exprs.begin();
   auto v1 = std_eval(vm, *it);

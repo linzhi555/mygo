@@ -181,6 +181,7 @@ std::optional<NodePtr<Expr>> Expr::parse_atomic(TokenStream& stream) {
 
   switch (v->type()) {
     case token::Type::Int:
+    case token::Type::Float:
     case token::Type::Str:
     case token::Type::True:
     case token::Type::False:

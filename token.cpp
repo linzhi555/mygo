@@ -91,6 +91,14 @@ std::optional<Value> int_from_chars(CharPtr start, CharPtr end) {
 }
 namespace {
 
+float decimal_weight_after_zero(unsigned int offset) {
+  float weight = 1.0;
+  for (unsigned int i = 0; i < offset; i++) {
+    weight /= 10.0;
+  }
+  return weight;
+}
+
 bool is_symbol_head_ele(uint8_t c) {
   if (c >= 'a' && c <= 'z') return true;
   if (c >= 'A' && c <= 'Z') return true;
@@ -146,10 +154,11 @@ std::optional<Value> float_from_chars(CharPtr start, CharPtr end) {
   auto temp = start + n1->len();
   if (temp == end) return std::nullopt;
   if (*temp != '.') return std::nullopt;
-  auto n2 = int_from_chars(start, end);
+  auto n2 = int_from_chars(temp + 1, end);
   if (!n2) return std::nullopt;
-  return Value::CreateFloat(n1->len() + n2->len() + 1,
-                            n1->i() + 0.00001 * n2->i());
+  return Value::CreateFloat(
+      n1->len() + n2->len() + 1,
+      n1->i() + decimal_weight_after_zero(n2.value().len()) * n2->i());
 }
 
 std::optional<Value> endl_from_chars(CharPtr start, CharPtr end) {
