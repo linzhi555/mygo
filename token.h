@@ -3,7 +3,10 @@
 #include <optional>
 #include <string>
 #include <vector>
+
+#include "common.h"
 namespace mygo {
+
 namespace token {
 
 #define TokenList     \
@@ -82,7 +85,7 @@ enum class Type {
 
 using CharPtr = std::vector<uint8_t>::iterator;
 
-class Value {
+struct Value {
  public:
   Value() = default;
   Value(Type t, int len) : type_(t), len_(len) {};
@@ -120,7 +123,8 @@ class Value {
 
   std::string debug();
 
- private:
+  Loc start = Loc(1, 1);
+  Loc end = Loc(1, 1);
   Type type_;
   int len_;
   std::string str_data_;

@@ -61,8 +61,6 @@ std::ostream& operator<<(std::ostream& stream, token::Value v) {
 
   stream << "]";
   return stream;
-
-  return stream;
 }
 
 std::string Value::debug() {

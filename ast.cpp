@@ -40,6 +40,7 @@ std::optional<NodePtr<Block>> Block::parse(TokenStream& stream) {
     std::optional<NodePtr<Declaration>> decl;
     std::optional<NodePtr<Funcall>> fcall;
     std::optional<NodePtr<If>> if_node;
+    std::optional<NodePtr<Function>> func_node;
 
     SKIP_TOKEN(stream, token::Type::Enl);
 
@@ -49,6 +50,10 @@ std::optional<NodePtr<Block>> Block::parse(TokenStream& stream) {
       res->nodes_.push_back(std::move(fcall.value()));
     } else if ((if_node = If::parse(stream))) {
       res->nodes_.push_back(std::move(if_node.value()));
+
+    } else if ((func_node = Function::parse(stream))) {
+      res->nodes_.push_back(std::move(func_node.value()));
+
     } else {
       break;
     }
@@ -196,6 +201,32 @@ std::optional<NodePtr<Expr>> Expr::parse_atomic(TokenStream& stream) {
 
   return std::nullopt;
 };
+
+std::optional<NodePtr<Function>> Function::parse(TokenStream& stream) {
+  EXPECT_TOKEN(stream, token::Type::Func);
+  std::string func_name;
+  if (!(stream.Peek()->type() == token::Type::Symbol)) return std::nullopt;
+  func_name = stream.Peek()->str();
+  stream.Next();
+
+  EXPECT_TOKEN(stream, token::Type::LParent);
+
+  EXPECT_TOKEN(stream, token::Type::RParent);
+
+  EXPECT_TOKEN(stream, token::Type::LBrace);
+
+  SKIP_TOKEN(stream, token::Type::Enl);
+  std::optional<NodePtr<Block>> block = Block::parse(stream);
+  if (!block) return std::nullopt;
+  EXPECT_TOKEN(stream, token::Type::RBrace);
+
+  NodePtr<Function> func_node = std::make_unique<Function>();
+  func_node->func_name = func_name;
+
+  func_node->block = std::move(block.value());
+
+  return func_node;
+}
 
 std::optional<NodePtr<If>> If::parse(TokenStream& stream) {
   EXPECT_TOKEN(stream, token::Type::If);

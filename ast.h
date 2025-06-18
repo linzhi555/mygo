@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 // #include <utility>
+#include <utility>
 #include <vector>
 
 #include "token.h"
@@ -41,6 +42,7 @@ using NodePtr = std::unique_ptr<T>;
 class Node {
  public:
   virtual enum Type Type() = 0;
+ // virtual std::pair<token::CharPtr, token::CharPtr> Range() = 0;
   virtual std::string debug() = 0;
 };
 

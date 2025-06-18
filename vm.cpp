@@ -163,7 +163,7 @@ void run_func(VM* vm, ast::Funcall* node) {
   if (node->func->v.str() == "print") {
     std_print(vm, node->arguments);
   } else {
-    std::cout << "func is not defined " << node->func->v.str();
+    std::cerr << "func is not defined " << node->func->v.str() << std::endl;
   }
 }
 

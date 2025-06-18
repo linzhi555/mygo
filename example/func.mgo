@@ -1,0 +1,5 @@
+func t1 (){
+    var a = 11.1001231
+    print ("run func",a)
+}
+t1()
