@@ -7,6 +7,8 @@ namespace mygo {
 namespace ast {
 
 std::optional<NodePtr<Funcall>> Funcall::parse(TokenStream& stream) {
+  TokenStream::StateGuard guard(stream);
+
   auto res = std::make_unique<Funcall>();
 
   std::optional<NodePtr<Expr>> f = Expr::parse(stream);
@@ -31,10 +33,13 @@ std::optional<NodePtr<Funcall>> Funcall::parse(TokenStream& stream) {
 
   EXPECT_TOKEN(stream, token::Type::RParent);
 
+  guard.Cancel();
   return res;
 };
 
 std::optional<NodePtr<Block>> Block::parse(TokenStream& stream) {
+  TokenStream::StateGuard guard(stream);
+
   auto res = std::make_unique<Block>();
   while (true) {
     std::optional<NodePtr<Declaration>> decl;
@@ -62,10 +67,14 @@ std::optional<NodePtr<Block>> Block::parse(TokenStream& stream) {
   };
 
   if (res->nodes_.empty()) return std::nullopt;
+
+  guard.Cancel();
   return res;
 };
 
 std::optional<NodePtr<Declaration>> Declaration::parse(TokenStream& stream) {
+  TokenStream::StateGuard guard(stream);
+
   auto res = std::make_unique<Declaration>();
   if (stream.Peek()->type() != token::Type::Var) return std::nullopt;
   stream.Next();
@@ -80,6 +89,8 @@ std::optional<NodePtr<Declaration>> Declaration::parse(TokenStream& stream) {
   auto e = Expr::parse(stream);
   if (!e) return std::nullopt;
   res->expr = std::move(e.value());
+
+  guard.Cancel();
   return res;
 }
 
@@ -88,12 +99,15 @@ std::optional<NodePtr<Expr>> Expr::parse(TokenStream& stream) {
 }
 
 std::optional<NodePtr<Expr>> Expr::parse_with_greater(TokenStream& stream) {
+  TokenStream::StateGuard guard(stream);
+
   auto expr0 = Expr::parse_with_plus(stream);
   if (!expr0) return std::nullopt;
 
   auto t = stream.Peek()->type();
   if (t != token::Type::Greater && t != token::Type::Less &&
       t != token::Type::Equal) {
+    guard.Cancel();
     return expr0;
   }
 
@@ -107,16 +121,21 @@ std::optional<NodePtr<Expr>> Expr::parse_with_greater(TokenStream& stream) {
   multi->ops.push_back(t);
   multi->exprs.push_back(std::move(expr0.value()));
   multi->exprs.push_back(std::move(expr1.value()));
+
+  guard.Cancel();
   return multi;
 }
 
 std::optional<NodePtr<Expr>> Expr::parse_with_plus(TokenStream& stream) {
+  TokenStream::StateGuard guard(stream);
+
   auto expr0 = Expr::parse_with_star(stream);
   if (!expr0) {
     return std::nullopt;
   }
   auto t = stream.Peek()->type();
   if (t != token::Type::Plus && t != token::Type::Sub) {
+    guard.Cancel();
     return expr0;
   }
 
@@ -140,10 +159,13 @@ std::optional<NodePtr<Expr>> Expr::parse_with_plus(TokenStream& stream) {
     }
   }
 
+  guard.Cancel();
   return multi;
 }
 
 std::optional<NodePtr<Expr>> Expr::parse_with_star(TokenStream& stream) {
+  TokenStream::StateGuard guard(stream);
+
   auto expr0 = Expr::parse_atomic(stream);
   if (!expr0) {
     return std::nullopt;
@@ -152,6 +174,7 @@ std::optional<NodePtr<Expr>> Expr::parse_with_star(TokenStream& stream) {
 
   auto t = stream.Peek()->type();
   if (t != token::Type::Star && t != token::Type::Slash) {
+    guard.Cancel();
     return expr0;
   }
 
@@ -175,10 +198,13 @@ std::optional<NodePtr<Expr>> Expr::parse_with_star(TokenStream& stream) {
     }
   }
 
+  guard.Cancel();
   return multi;
 }
 
 std::optional<NodePtr<Expr>> Expr::parse_atomic(TokenStream& stream) {
+  TokenStream::StateGuard guard(stream);
+
   auto v = stream.Peek();
   if (!v) {
     return std::nullopt;
@@ -192,6 +218,8 @@ std::optional<NodePtr<Expr>> Expr::parse_atomic(TokenStream& stream) {
     case token::Type::False:
     case token::Type::Symbol: {
       stream.Next();
+
+      guard.Cancel();
       return MakeAtomic(v.value());
     }
 
@@ -203,6 +231,8 @@ std::optional<NodePtr<Expr>> Expr::parse_atomic(TokenStream& stream) {
 };
 
 std::optional<NodePtr<Function>> Function::parse(TokenStream& stream) {
+  TokenStream::StateGuard guard(stream);
+
   EXPECT_TOKEN(stream, token::Type::Func);
   std::string func_name;
   if (!(stream.Peek()->type() == token::Type::Symbol)) return std::nullopt;
@@ -225,10 +255,13 @@ std::optional<NodePtr<Function>> Function::parse(TokenStream& stream) {
 
   func_node->block = std::move(block.value());
 
+  guard.Cancel();
   return func_node;
 }
 
 std::optional<NodePtr<If>> If::parse(TokenStream& stream) {
+  TokenStream::StateGuard guard(stream);
+
   EXPECT_TOKEN(stream, token::Type::If);
   EXPECT_TOKEN(stream, token::Type::LParent);
   std::optional<NodePtr<Expr>> expr = Expr::parse(stream);
@@ -247,6 +280,7 @@ std::optional<NodePtr<If>> If::parse(TokenStream& stream) {
   if_node->expr = std::move(expr.value());
   if_node->block = std::move(block.value());
 
+  guard.Cancel();
   return if_node;
 }
 

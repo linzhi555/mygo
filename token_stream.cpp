@@ -10,29 +10,28 @@ namespace mygo {
 
 namespace {}  // namespace
 
-TokenStream::TokenStream(std::vector<uint8_t>&& src)
-    : src_(src), pos_(0), line_(1), colum_(1) {}
+TokenStream::TokenStream(std::vector<uint8_t>&& src) : src_(src) {}
 
 std::optional<token::Value> TokenStream::Peek() {
-  if (cache_key_ == pos_) return cache_;
-  token::CharPtr cur_char = src_.begin() + pos_;
+  if (cache_key_ == state_.pos) return cache_;
+  token::CharPtr cur_char = src_.begin() + state_.pos;
   std::optional<token::Value> v = token::Value::FromChars(cur_char, src_.end());
 
-  cache_key_ = pos_;
+  cache_key_ = state_.pos;
   cache_ = v;
 
   if (!v) return v;
 
-  cache_->start = Loc(line_, colum_);
+  cache_->start = Loc(state_.line, state_.colum);
 
   if (cache_->type() == token::Type::Enl) {
-    line_++;
-    colum_ = 1;
+    state_.line++;
+    state_.colum = 1;
   } else {
-    colum_ += cache_->len();
+    state_.colum += cache_->len();
   }
 
-  cache_->end = Loc(line_, colum_);
+  cache_->end = Loc(state_.line, state_.colum);
 
   LOG(INFO) << cache_.value() << cache_.value().start.ToString()
             << cache_.value().end.ToString();
@@ -42,7 +41,7 @@ std::optional<token::Value> TokenStream::Peek() {
 
 void TokenStream::Next() {
   while (true) {
-    pos_ += Peek()->len();
+    state_.pos += Peek()->len();
 
     if (!Peek()) return;
 
