@@ -1,15 +1,21 @@
 #pragma once
+#include <cassert>
 #include <iostream>
 
-enum Serverity {
-  NOLOG = 0,
-  ERROR = 1,
-  WARNING = 2,
-  INFO = 3,
-  FATAL = 4,
+enum Serverity : int {
+  DEBUG,
+  INFO,
+  WARNING,
+  ERROR,
+  NOLOG,
 };
 
 #define LOG(serverity) log_stream(serverity)
+
+#define NOT_IMPLEMENTED()           \
+  do {                              \
+    assert(0 && "not implemented"); \
+  } while (0)
 
 std::ostream& log_stream(Serverity s);
 void set_debug_level(Serverity s);

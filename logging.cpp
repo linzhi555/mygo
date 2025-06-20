@@ -23,18 +23,13 @@ class NullStream : public std::ostream {
 // 全局黑洞流实例
 NullStream null_stream;
 
-int debug_level = 0;
+Serverity debug_level = WARNING;
 
-void set_debug_level(Serverity s) { debug_level = static_cast<int>(s); }
+void set_debug_level(Serverity s) { debug_level = s; }
 
 std::ostream& log_stream(Serverity s) {
-  switch (s) {
-    case INFO:
-      if (debug_level == 0) return null_stream;
-      std::cout << std::endl << "INFO" << " ";
-      return std::cout;
+  if (debug_level > s) return null_stream;
 
-    default:
-      return std::cout;
-  }
+  std::cout << std::endl << "LEVEL" << s << " ";
+  return std::cout;
 }

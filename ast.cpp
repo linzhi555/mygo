@@ -76,7 +76,8 @@ std::optional<NodePtr<Declaration>> Declaration::parse(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
   auto res = std::make_unique<Declaration>();
-  if (stream.Peek()->type() != token::Type::Var) return std::nullopt;
+  auto var_mutablity = stream.Peek();
+  if (var_mutablity->type() != token::Type::Var) return std::nullopt;
   stream.Next();
 
   if (!(stream.Peek()->type() == token::Type::Symbol)) return std::nullopt;
@@ -90,6 +91,8 @@ std::optional<NodePtr<Declaration>> Declaration::parse(TokenStream& stream) {
   if (!e) return std::nullopt;
   res->expr = std::move(e.value());
 
+  res->start = var_mutablity->start;
+  res->end = res->expr->end;
   guard.Cancel();
   return res;
 }
@@ -219,8 +222,11 @@ std::optional<NodePtr<Expr>> Expr::parse_atomic(TokenStream& stream) {
     case token::Type::Symbol: {
       stream.Next();
 
+      NodePtr<Expr> res = MakeAtomic(v.value());
+      res->start = v->start;
+      res->end = v->end;
       guard.Cancel();
-      return MakeAtomic(v.value());
+      return res;
     }
 
     default:

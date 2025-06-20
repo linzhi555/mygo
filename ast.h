@@ -3,7 +3,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-// #include <utility>
 #include <utility>
 #include <vector>
 
@@ -41,8 +40,10 @@ using NodePtr = std::unique_ptr<T>;
 
 class Node {
  public:
+  Loc start;
+  Loc end;
+
   virtual enum Type Type() = 0;
- // virtual std::pair<token::CharPtr, token::CharPtr> Range() = 0;
   virtual std::string debug() = 0;
 };
 
@@ -79,15 +80,6 @@ class Expr : public Node {
     NodePtr<Expr> e = std::make_unique<Expr>();
     e->is_atomic = true;
     e->v = v;
-    return e;
-  }
-
-  static NodePtr<Expr> CombineExpr(token::Type op, std::unique_ptr<Expr> e1,
-                                   std::unique_ptr<Expr> e2) {
-    NodePtr<Expr> e = std::make_unique<Expr>();
-    e->ops.push_back(op);
-    e->exprs.push_back(std::move(e1));
-    e->exprs.push_back(std::move(e2));
     return e;
   }
 

@@ -23,6 +23,17 @@ set( PROJECT_SOURCES
         ./ast.cpp
 )
 
+set ( TEST_SOURCES
+        ./vm.cpp
+        ./test/test.cpp
+        ./token.cpp
+        ./token_stream.cpp
+        ./logging.cpp
+        ./ast.cpp
+)
+
 set(CMAKE_BUILD_TYPE Debug)
 message(${PROJECT_SOURCES})
+
 add_executable(mygo ${PROJECT_SOURCES})
+add_executable(test_all ${TEST_SOURCES})
