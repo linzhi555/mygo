@@ -33,8 +33,8 @@ func ssfafdsfwe)";
   LOG(WARNING) << root.value()->start << root.value()->end
                << stream.state().loc;
 
-  // assert(root.value()->end.line == 5);
-  // assert(root.value()->end.coloum == 1);
+  assert(root.value()->end.line == 7);
+  assert(root.value()->end.coloum == 1);
   LOG(WARNING) << "test succeed" << std::endl;
 }
 
