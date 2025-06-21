@@ -10,7 +10,7 @@ enum Serverity : int {
   NOLOG,
 };
 
-#define LOG(serverity) log_stream(serverity)
+#define LOG(serverity) log_stream(serverity)<< __FUNCTION__
 
 #define NOT_IMPLEMENTED()           \
   do {                              \

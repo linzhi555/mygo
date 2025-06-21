@@ -33,7 +33,7 @@ std::optional<NodePtr<Funcall>> Funcall::parse(TokenStream& stream) {
 
   EXPECT_TOKEN(stream, token::Type::RParent);
 
-  guard.Cancel();
+  guard.finish(res->start, res->end);
   return res;
 };
 
@@ -68,7 +68,7 @@ std::optional<NodePtr<Block>> Block::parse(TokenStream& stream) {
 
   if (res->nodes_.empty()) return std::nullopt;
 
-  guard.Cancel();
+  guard.finish(res->start, res->end);
   return res;
 };
 
@@ -91,9 +91,7 @@ std::optional<NodePtr<Declaration>> Declaration::parse(TokenStream& stream) {
   if (!e) return std::nullopt;
   res->expr = std::move(e.value());
 
-  res->start = var_mutablity->start;
-  res->end = res->expr->end;
-  guard.Cancel();
+  guard.finish(res->start, res->end);
   return res;
 }
 
@@ -110,7 +108,7 @@ std::optional<NodePtr<Expr>> Expr::parse_with_greater(TokenStream& stream) {
   auto t = stream.Peek()->type();
   if (t != token::Type::Greater && t != token::Type::Less &&
       t != token::Type::Equal) {
-    guard.Cancel();
+    guard.finish(expr0.value()->start, expr0.value()->end);
     return expr0;
   }
 
@@ -125,7 +123,7 @@ std::optional<NodePtr<Expr>> Expr::parse_with_greater(TokenStream& stream) {
   multi->exprs.push_back(std::move(expr0.value()));
   multi->exprs.push_back(std::move(expr1.value()));
 
-  guard.Cancel();
+  guard.finish(multi->start, multi->end);
   return multi;
 }
 
@@ -138,7 +136,7 @@ std::optional<NodePtr<Expr>> Expr::parse_with_plus(TokenStream& stream) {
   }
   auto t = stream.Peek()->type();
   if (t != token::Type::Plus && t != token::Type::Sub) {
-    guard.Cancel();
+    guard.finish(expr0.value()->start, expr0.value()->end);
     return expr0;
   }
 
@@ -162,7 +160,7 @@ std::optional<NodePtr<Expr>> Expr::parse_with_plus(TokenStream& stream) {
     }
   }
 
-  guard.Cancel();
+  guard.finish(multi->start, multi->end);
   return multi;
 }
 
@@ -177,7 +175,7 @@ std::optional<NodePtr<Expr>> Expr::parse_with_star(TokenStream& stream) {
 
   auto t = stream.Peek()->type();
   if (t != token::Type::Star && t != token::Type::Slash) {
-    guard.Cancel();
+    guard.finish(expr0.value()->start, expr0.value()->end);
     return expr0;
   }
 
@@ -201,7 +199,7 @@ std::optional<NodePtr<Expr>> Expr::parse_with_star(TokenStream& stream) {
     }
   }
 
-  guard.Cancel();
+  guard.finish(multi->start, multi->end);
   return multi;
 }
 
@@ -225,7 +223,7 @@ std::optional<NodePtr<Expr>> Expr::parse_atomic(TokenStream& stream) {
       NodePtr<Expr> res = MakeAtomic(v.value());
       res->start = v->start;
       res->end = v->end;
-      guard.Cancel();
+      guard.finish(res->start, res->end);
       return res;
     }
 
@@ -261,7 +259,7 @@ std::optional<NodePtr<Function>> Function::parse(TokenStream& stream) {
 
   func_node->block = std::move(block.value());
 
-  guard.Cancel();
+  guard.finish(func_node->start, func_node->end);
   return func_node;
 }
 
@@ -286,7 +284,7 @@ std::optional<NodePtr<If>> If::parse(TokenStream& stream) {
   if_node->expr = std::move(expr.value());
   if_node->block = std::move(block.value());
 
-  guard.Cancel();
+  guard.finish(if_node->start, if_node->end);
   return if_node;
 }
 

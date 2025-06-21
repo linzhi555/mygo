@@ -20,18 +20,16 @@ std::optional<token::Value> TokenStream::Peek() {
   cache_key_ = state_.pos;
   cache_ = v;
 
-  if (!v) return v;
-
-  cache_->start = Loc(state_.line, state_.colum);
-
+  cache_->start = state_.loc;
+  cache_->end = cache_->start;
   if (cache_->type() == token::Type::Enl) {
-    state_.line++;
-    state_.colum = 1;
+    cache_->end.line++;
+    cache_->end.coloum = 1;
   } else {
-    state_.colum += cache_->len();
+    cache_->end.coloum += cache_->len();
   }
 
-  cache_->end = Loc(state_.line, state_.colum);
+  if (!v) return v;
 
   LOG(INFO) << cache_.value() << cache_.value().start.ToString()
             << cache_.value().end.ToString();
@@ -41,7 +39,9 @@ std::optional<token::Value> TokenStream::Peek() {
 
 void TokenStream::Next() {
   while (true) {
+    state_.loc = Peek()->end;
     state_.pos += Peek()->len();
+    Peek();
 
     if (!Peek()) return;
 

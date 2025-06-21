@@ -13,27 +13,36 @@ class TokenStream {
 
   struct State {
     int pos = 0;
-    int line = 1;
-    int colum = 1;
+    Loc loc;
   };
 
+  // A respectful  guard who guard the state the of tokenstream.
   class StateGuard {
     TokenStream& stream_;
     State state_;
-    bool canceled_ = false;
+    bool cancel_reload_ = false;
 
    public:
-    StateGuard(TokenStream& stream) : stream_(stream), state_(stream.Save()) {}
-    void Cancel() { canceled_ = true; };
+    StateGuard(TokenStream& stream) : stream_(stream), state_(stream.state()) {}
+
+    // tell the guard you job is finished and you can go!
+    // the last thing is tell the loc changed when you is guarding.
+    void finish(Loc& state, Loc& end) {
+      cancel_reload_ = true;
+      state = state_.loc;
+      end = stream_.state().loc;
+    };
+
+    State state() { return state_; }
 
     ~StateGuard() {
-      if (!canceled_) {
+      if (!cancel_reload_) {
         stream_.Load(state_);
       }
     }
   };
 
-  State Save() { return state_; };
+  State state() { return state_; };
   void Load(State s) { state_ = s; };
 
  private:

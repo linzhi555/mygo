@@ -14,4 +14,10 @@ struct Loc {
            std::to_string(coloum) + ")";
   }
 };
+
+inline std::ostream& operator<<(std::ostream& o, Loc loc) {
+  o << loc.ToString();
+  return o;
+}
+
 }  // namespace mygo
