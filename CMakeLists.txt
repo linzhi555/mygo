@@ -14,26 +14,28 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-set( PROJECT_SOURCES
+set( LIB_SOURCES
         ./vm.cpp
-        ./mygo.cpp
         ./token.cpp
         ./token_stream.cpp
         ./logging.cpp
         ./ast.cpp
 )
 
-set ( TEST_SOURCES
-        ./vm.cpp
-        ./test/test.cpp
-        ./token.cpp
-        ./token_stream.cpp
-        ./logging.cpp
-        ./ast.cpp
-)
+add_library(mygodev STATIC ${LIB_SOURCES})
+
 
 set(CMAKE_BUILD_TYPE Debug)
-message(${PROJECT_SOURCES})
+message(${LIB_SOURCES})
 
-add_executable(mygo ${PROJECT_SOURCES})
-add_executable(test_all ${TEST_SOURCES})
+add_executable(mygo mygo.cpp)
+target_link_libraries(mygo PRIVATE mygodev)
+
+add_executable(test_func test/test_func.cpp)
+target_link_libraries(test_func PRIVATE mygodev)
+
+add_executable(test_decl test/test_decl.cpp)
+target_link_libraries(test_decl PRIVATE mygodev)
+
+#add_executable(mygo ${PROJECT_SOURCES})
+#add_executable(test_all ${TEST_SOURCES})

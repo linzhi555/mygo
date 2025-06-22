@@ -1,23 +1,11 @@
-#include <cassert>
-#include <cstdint>
-#include <string>
-#include <vector>
-
 #include "ast.h"
 #include "logging.h"
+#include "test.h"
 
-void test_decl() {
-  std::string src = "var a = 11";
-  std::vector<uint8_t> src_data(src.begin(), src.end());
-  auto stream = mygo::TokenStream(std::move(src_data));
-  auto root = mygo::ast::Declaration::parse(stream);
-  assert(root.has_value());
-  assert(root.value()->end.coloum - root.value()->start.coloum ==
-         (int)src.length());
-  LOG(WARNING) << "test succeed" << std::endl;
-}
+INIT_TEST;
 
-void test_func() {
+std::vector<void (*)()> test_fs;
+TEST(1) {
   std::string src = R"(func t1 (){
       var a = 11.1001231
       print ("run func",a)
@@ -40,6 +28,6 @@ func ssfafdsfwe)";
 
 int main() {
   set_debug_level(INFO);
-  test_decl();
-  test_func();
+
+  RUN_TEST;
 }
