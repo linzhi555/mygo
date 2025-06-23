@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
   std::vector<uint8_t> src_data(src.begin(), src.end());
 
   auto stream = mygo::TokenStream(std::move(src_data));
-  mygo::vm::VM vm;
+  mygo::VM vm;
   auto root = mygo::ast::Root::parse(stream);
   if (root) {
     LOG(INFO) << "root ast: " << root.value()->debug() << std::endl;

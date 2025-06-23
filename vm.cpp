@@ -11,8 +11,6 @@
 
 namespace mygo {
 
-namespace vm {
-
 namespace {
 
 bool is_logic_operator(token::Type t) {
@@ -83,8 +81,9 @@ std::optional<Value> std_eval(VM* vm, ast::NodePtr<ast::Expr>& expr) {
 
       case token::Type::Symbol: {
         std::string key = expr->v.str();
-        if (vm->globals_.find(key) != vm->globals_.end()) {
-          return vm->globals_[key];
+        auto v = vm->globals.Get(key);
+        if (v) {
+          return v;
         }
         break;
       }
@@ -168,7 +167,7 @@ void run_func(VM* vm, ast::Funcall* node) {
 }
 
 void run_declaration(VM* vm, ast::Declaration* node) {
-  vm->globals_[node->var_name] = std_eval(vm, node->expr).value();
+  vm->globals.Set(node->var_name, std_eval(vm, node->expr).value());
 }
 
 void run_block(VM* vm, ast::NodePtr<ast::Block>& block);
@@ -209,5 +208,4 @@ void run_block(VM* vm, ast::NodePtr<ast::Block>& block) {
 }
 
 void VM::run(ast::NodePtr<ast::Root>& root) { run_block(this, root); }
-}  // namespace vm
 }  // namespace mygo

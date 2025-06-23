@@ -20,6 +20,7 @@ set( LIB_SOURCES
         ./token_stream.cpp
         ./logging.cpp
         ./ast.cpp
+        ./frame.cpp
 )
 
 add_library(mygodev STATIC ${LIB_SOURCES})
