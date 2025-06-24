@@ -25,20 +25,19 @@ bool is_logic_operator(token::Type t) {
 }
 
 bool to_number(Value v, float& data) {
-  switch (v.type) {
-    case Value::Type::Int: {
-      data = std::get<int>(v.data);
-      return true;
-    }
-
-    case Value::Type::Float: {
-      data = std::get<float>(v.data);
-      return true;
-    }
-
-    default:
-      return false;
+  // match start
+  if (v.type == Value::Int) {
+    data = std::get<int>(v.data);
+    return true;
   }
+
+  if (v.type == Value::Float) {
+    data = std::get<float>(v.data);
+    return true;
+  }
+  // match end
+
+  return false;
 }
 
 std::optional<Value> operator_greater(Value v1, Value v2) {
@@ -81,7 +80,7 @@ std::optional<Value> std_eval(VM* vm, ast::NodePtr<ast::Expr>& expr) {
 
       case token::Type::Symbol: {
         std::string key = expr->v.str();
-        auto v = vm->globals.Get(key);
+        auto v = vm->global().Get(key);
         if (v) {
           return v;
         }
@@ -119,7 +118,7 @@ std::optional<Value> std_eval(VM* vm, ast::NodePtr<ast::Expr>& expr) {
 
   auto it = expr->exprs.begin();
   auto v1 = std_eval(vm, *it);
-  if (v1->type != Value::Type::Int) return std::nullopt;
+  if (v1->type != Value::Int) return std::nullopt;
   int res = std::get<int>(v1->data);
   it++;
 
@@ -127,7 +126,7 @@ std::optional<Value> std_eval(VM* vm, ast::NodePtr<ast::Expr>& expr) {
        it != expr->exprs.end() && op_it != expr->ops.end(); it++, op_it++) {
     auto temp = std_eval(vm, *it);
 
-    if (temp && temp.value().type == Value::Type::Int) {
+    if (temp && temp.value().type == Value::Int) {
       int i_data = std::get<int>(temp->data);
       switch (*op_it) {
         case token::Type::Plus:
@@ -161,20 +160,27 @@ void std_print(VM* vm, std::vector<ast::NodePtr<ast::Expr>>& args) {
 void run_func(VM* vm, ast::Funcall* node) {
   if (node->func->v.str() == "print") {
     std_print(vm, node->arguments);
+  } else if (node->func->v.str() == "t1") {
+    vm->global().debug();
+    auto v = vm->global().Get("t1");
+    VM temp;
+    temp.run(v->As<ast::Function*>()->block);
+
+    // assert("run function decl" && false);
   } else {
     std::cerr << "func is not defined " << node->func->v.str() << std::endl;
   }
 }
 
 void run_declaration(VM* vm, ast::Declaration* node) {
-  vm->globals.Set(node->var_name, std_eval(vm, node->expr).value());
+  vm->global().Set(node->var_name, std_eval(vm, node->expr).value());
 }
 
 void run_block(VM* vm, ast::NodePtr<ast::Block>& block);
 
 void run_if(VM* vm, ast::If* node) {
   std::optional<Value> v = std_eval(vm, node->expr);
-  if (v && v->type == Value::Type::Bool && std::get<bool>(v->data)) {
+  if (v && v->type == Value::Bool && std::get<bool>(v->data)) {
     run_block(vm, node->block);
   }
 }
@@ -188,9 +194,16 @@ void run_block(VM* vm, ast::NodePtr<ast::Block>& block) {
         run_func(vm, f);
         break;
       }
+
       case ast::Type::Declaration: {
         ast::Declaration* decl = static_cast<ast::Declaration*>(node.get());
         run_declaration(vm, decl);
+        break;
+      }
+
+      case ast::Type::Function: {
+        ast::Function* func = static_cast<ast::Function*>(node.get());
+        vm->global().Set(func->func_name, Value::Make(func));
         break;
       }
 

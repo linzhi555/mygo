@@ -7,7 +7,7 @@ namespace mygo {
 
 std::optional<Value> Frame::Get(std::string_view key) {
   std::string k(key);
-  if (vals_.find(k) != vals_.end()) {
+  if (vals_.find(k) == vals_.end()) {
     return std::nullopt;
   } else {
     return vals_.at(k);

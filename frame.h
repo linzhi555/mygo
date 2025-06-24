@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -19,6 +20,12 @@ class Frame {
 
   std::optional<Value> Get(std::string_view key);
   void Set(std::string_view key, Value v);
+
+  void debug() {
+    for (auto k : vals_) {
+      std::cout << k.first << " " << k.second.ToString();
+    }
+  }
 
  private:
   std::unordered_map<std::string, Value> vals_;

@@ -3,17 +3,24 @@
 #include <string>
 #include <variant>
 
-namespace mygo {
+#include "ast.h"
 
-class Object;
+namespace mygo {
 
 class Value {
  public:
-  enum class Type { Bool, Str, Int, Float, Object };
+  using Type_t = std::string_view;
+  static constexpr Type_t Bool = "bool";
+  static constexpr Type_t Str = "bool";
+  static constexpr Type_t Int = "int";
+  static constexpr Type_t Float = "float";
+  static constexpr Type_t Struct = "struct";
+  static constexpr Type_t Func = "func";
 
-  Type type;
+  Type_t type;
   bool is_builtin = true;
-  std::variant<bool, std::string, int, float, Object*> data;
+
+  std::variant<bool, std::string, int, float, ast::Function*> data;
 
   template <typename T>
   static Value Make(T v) {
@@ -21,37 +28,40 @@ class Value {
 
     value.is_builtin = true;
     if constexpr (std::is_same_v<T, int>) {
-      value.type = Type::Int;
+      value.type = Int;
     } else if constexpr (std::is_same_v<T, bool>) {
-      value.type = Type::Bool;
+      value.type = Bool;
     } else if constexpr (std::is_same_v<T, std::string>) {
-      value.type = Type::Str;
+      value.type = Str;
     } else if constexpr (std::is_same_v<T, float>) {
-      value.type = Type::Float;
-    } else if constexpr (std::is_same_v<T, Object*>) {
-      value.is_builtin = false;
-      value.type = Type::Object;
+      value.type = Float;
+    } else if constexpr (std::is_same_v<T, ast::Function*>) {
+      value.type = Func;
     }
 
     value.data = std::move(v);
     return value;
   }
+
+  template <typename T>
+  T As() {
+    return std::get<T>(data);
+  }
+
   std::string ToString() {
-    switch (type) {
-      case Type::Int:
-        return std::to_string(std::get<int>(data));
-      case Type::Str:
-        return std::get<std::string>(data);
+    if (type == Int) return std::to_string(std::get<int>(data));
 
-      case Type::Bool:
-        return std::get<bool>(data) ? std::string("true")
-                                    : std::string("false");
-      case Type::Float:
-        return std::to_string(std::get<float>(data));
+    if (type == Str) return std::get<std::string>(data);
 
-      case Type::Object:
-        return std::string("Object");
-    }
+    if (type == Bool)
+      return std::get<bool>(data) ? std::string("true") : std::string("false");
+
+    if (type == Float) return std::to_string(std::get<float>(data));
+
+    if (type == Func)
+      return std::string("func(") + As<ast::Function*>()->func_name + ")";
+
+    if (type == Struct) return std::string("Object");
 
     return std::string();
   }
