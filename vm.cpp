@@ -157,59 +157,54 @@ void std_print(VM* vm, std::vector<ast::NodePtr<ast::Expr>>& args) {
   std::cout << std::endl;
 }
 
-void run_func(VM* vm, ast::Funcall* node) {
-  if (node->func->v.str() == "print") {
-    std_print(vm, node->arguments);
-  } else if (node->func->v.str() == "t1") {
-    vm->global().debug();
-    auto v = vm->global().Get("t1");
-    VM temp;
-    temp.run(v->As<ast::Function*>()->block);
+void run_block(ast::NodePtr<ast::Block>& block);
 
-    // assert("run function decl" && false);
+void VM::run_funcall(ast::Funcall* node) {
+  if (node->func->v.str() == "print") {
+    std_print(this, node->arguments);
+  } else if (auto v = global().Get(node->func->v.str())) {
+    run_block(v->As<ast::Function*>()->block);
   } else {
     std::cerr << "func is not defined " << node->func->v.str() << std::endl;
   }
 }
 
-void run_declaration(VM* vm, ast::Declaration* node) {
-  vm->global().Set(node->var_name, std_eval(vm, node->expr).value());
+void VM::run_declaration(ast::Declaration* node) {
+  global().Set(node->var_name, std_eval(this, node->expr).value());
 }
 
-void run_block(VM* vm, ast::NodePtr<ast::Block>& block);
-
-void run_if(VM* vm, ast::If* node) {
-  std::optional<Value> v = std_eval(vm, node->expr);
+void VM::run_if(ast::If* node) {
+  std::optional<Value> v = std_eval(this, node->expr);
   if (v && v->type == Value::Bool && std::get<bool>(v->data)) {
-    run_block(vm, node->block);
+    run_block(node->block);
   }
 }
 
-void run_block(VM* vm, ast::NodePtr<ast::Block>& block) {
+void VM::run_block(ast::NodePtr<ast::Block>& block) {
   for (const std::unique_ptr<ast::Node>& node : block->nodes_) {
     switch (node->Type()) {
       case ast::Type::Funcall: {
         ast::Funcall* f = static_cast<ast::Funcall*>(node.get());
 
-        run_func(vm, f);
+        run_funcall(f);
         break;
       }
 
       case ast::Type::Declaration: {
         ast::Declaration* decl = static_cast<ast::Declaration*>(node.get());
-        run_declaration(vm, decl);
+        run_declaration(decl);
         break;
       }
 
       case ast::Type::Function: {
         ast::Function* func = static_cast<ast::Function*>(node.get());
-        vm->global().Set(func->func_name, Value::Make(func));
+        global().Set(func->func_name, Value::Make(func));
         break;
       }
 
       case ast::Type::If: {
         ast::If* decl = static_cast<ast::If*>(node.get());
-        run_if(vm, decl);
+        run_if(decl);
         break;
       }
 
@@ -220,5 +215,5 @@ void run_block(VM* vm, ast::NodePtr<ast::Block>& block) {
   }
 }
 
-void VM::run(ast::NodePtr<ast::Root>& root) { run_block(this, root); }
+void VM::run(ast::NodePtr<ast::Root>& root) { run_block(root); }
 }  // namespace mygo

@@ -29,10 +29,12 @@ func ssfafdsfwe)";
 }
 
 TEST(2) {
-  std::string src = R"(func t1 (){
-      var a = 11.1001231
+  std::string src = R"(
+
+var a = 11.1001231
+func t1 (v float){
       print ("run func",a)
-  }
+}
 
 t1(); 
   
@@ -41,6 +43,9 @@ t1();
   auto stream = mygo::TokenStream(std::move(src_data));
   auto root = mygo::ast::Root::parse(stream);
   assert(root.has_value());
+
+  LOG(WARNING) << root.value()->nodes_.size();
+  assert(root.value()->nodes_.size() == 3);
 
   LOG(WARNING) << root.value()->start << root.value()->end
                << stream.state().loc;
@@ -51,7 +56,7 @@ t1();
 }
 
 int main() {
-  set_debug_level(INFO);
+  set_debug_level(WARNING);
 
   RUN_TEST;
 }

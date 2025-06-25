@@ -21,8 +21,13 @@ class VM {
   };
 
  private:
-  // global storage area
-  int globals_;
+  void run_block(ast::NodePtr<ast::Block>& block);
+  void run_if(ast::If* node);
+  void run_declaration(ast::Declaration* node);
+  void run_funcall(ast::Funcall* node);
+
+      // global storage area
+      int globals_;
   // stack pointer
   int sp_;
 };
