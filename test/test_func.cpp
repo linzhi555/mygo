@@ -32,7 +32,7 @@ TEST(2) {
   std::string src = R"(
 
 var a = 11.1001231
-func t1 (v float){
+func t1 (v float , b int){
       print ("run func",a)
 }
 
@@ -44,11 +44,15 @@ t1();
   auto root = mygo::ast::Root::parse(stream);
   assert(root.has_value());
 
-  LOG(WARNING) << root.value()->nodes_.size();
+  LOG(INFO) << root.value()->debug();
+
+  LOG(WARNING) << root.value()->nodes_.size() << std::endl;
+  LOG(WARNING) << stream.parse_error << std::endl;
+
   assert(root.value()->nodes_.size() == 3);
 
-  LOG(WARNING) << root.value()->start << root.value()->end
-               << stream.state().loc;
+  LOG(WARNING) << root.value()->start << root.value()->end << stream.state().loc
+               << std::endl;
 
   mygo::VM vm;
   vm.run(root.value());
@@ -56,7 +60,7 @@ t1();
 }
 
 int main() {
-  set_debug_level(WARNING);
+  set_debug_level(INFO);
 
   RUN_TEST;
 }

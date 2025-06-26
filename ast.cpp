@@ -3,6 +3,8 @@
 #include <memory>
 #include <utility>
 
+#include "logging.h"
+
 namespace mygo {
 namespace ast {
 
@@ -238,6 +240,8 @@ std::optional<NodePtr<Function>> Function::parse(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
   EXPECT_TOKEN(stream, token::Type::Func);
+
+  NodePtr<Function> func_node = std::make_unique<Function>();
   std::string func_name;
   if (!(stream.Peek()->type() == token::Type::Symbol)) return std::nullopt;
   func_name = stream.Peek()->str();
@@ -245,16 +249,35 @@ std::optional<NodePtr<Function>> Function::parse(TokenStream& stream) {
 
   EXPECT_TOKEN(stream, token::Type::LParent);
 
-  EXPECT_TOKEN(stream, token::Type::RParent);
+  for (int i = 0; i < 1000; i++) {
+    std::string val_name, val_t;
 
-  EXPECT_TOKEN(stream, token::Type::LBrace);
+    token::Value temp;
+
+    if (stream.Peek()->type() != token::Type::Symbol) {
+      LOG(INFO) << "finish  func arguments parse " << func_name << std::endl;
+      break;
+    }
+    EXPECT_GET_TOKEN(stream, token::Type::Symbol, "need symbol", temp);
+    val_name = temp.str();
+    EXPECT_GET_TOKEN(stream, token::Type::Symbol, "need symbol", temp);
+    val_t = temp.str();
+
+    SKIP_TOKEN_ONCE(stream, token::Type::Comma);
+
+    func_node->args.push_back({val_name, val_t});
+  }
+
+  EXPECT_TOKEN_ERR(stream, token::Type::RParent,
+                   (std::string("expect ) but get") + stream.Peek()->debug()));
+
+  EXPECT_TOKEN_ERR(stream, token::Type::LBrace, "expect {");
 
   SKIP_TOKEN(stream, token::Type::Enl);
   std::optional<NodePtr<Block>> block = Block::parse(stream);
   if (!block) return std::nullopt;
   EXPECT_TOKEN(stream, token::Type::RBrace);
 
-  NodePtr<Function> func_node = std::make_unique<Function>();
   func_node->func_name = func_name;
 
   func_node->block = std::move(block.value());

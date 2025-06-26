@@ -6,6 +6,8 @@
 namespace mygo {
 class TokenStream {
  public:
+  std::string parse_error;
+
   TokenStream(std::vector<uint8_t>&& src);
   void Next();
   std::optional<token::Value> Peek();

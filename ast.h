@@ -27,6 +27,11 @@ enum class Type {
     S.Next();                                        \
   }
 
+#define SKIP_TOKEN_ONCE(S, T)                     \
+  if (S.Peek() && S.Peek().value().type() == T) { \
+    S.Next();                                     \
+  }
+
 #define EXPECT_TOKEN(S, T)            \
   if (!S.Peek()) return std::nullopt; \
   if (S.Peek().value().type() != T) { \
@@ -34,6 +39,25 @@ enum class Type {
   } else {                            \
     S.Next();                         \
   }
+
+#define EXPECT_TOKEN_ERR(S, T, ERR)   \
+  if (!S.Peek()) return std::nullopt; \
+  if (S.Peek().value().type() != T) { \
+    S.parse_error = ERR;              \
+    return std::nullopt;              \
+  } else {                            \
+    S.Next();                         \
+  }
+
+#define EXPECT_GET_TOKEN(S, T, ERR, RES) \
+  if (!S.Peek()) return std::nullopt;    \
+  if (S.Peek().value().type() != T) {    \
+    S.parse_error = ERR;                 \
+    return std::nullopt;                 \
+  } else {                               \
+    RES = S.Peek().value();              \
+    S.Next();                            \
+  }  // namespace ast
 
 template <typename T>
 using NodePtr = std::unique_ptr<T>;
@@ -175,6 +199,13 @@ class Function : public Node {
   std::string debug() override {
     std::string res;
     res += "Function:\n";
+
+    int i = 1;
+    for (const auto& p : args) {
+      res += "arg" + std::to_string(i) + " " + p.first + " " + p.second + "\n";
+      i++;
+    }
+
     res += block->debug();
     return res;
   };
