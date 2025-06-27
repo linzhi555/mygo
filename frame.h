@@ -13,6 +13,7 @@ namespace mygo {
 class Frame {
  public:
   Frame() : global_(nullptr) {}
+  Frame(Frame* global) : global_(global) {}
   std::unique_ptr<Frame> MakeRoot() {
     auto res = std::make_unique<Frame>();
     return res;
@@ -23,7 +24,7 @@ class Frame {
 
   void debug() {
     for (auto k : vals_) {
-      std::cout << k.first << " " << k.second.ToString();
+      std::cout << k.first << " " << k.second.ToString() << std::endl;
     }
   }
 

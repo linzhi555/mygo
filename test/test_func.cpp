@@ -33,6 +33,7 @@ TEST(2) {
 
 var a = 11.1001231
 func t1 (v float , b int){
+      var a = 12;
       print ("run func",a)
 }
 

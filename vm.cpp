@@ -80,7 +80,7 @@ std::optional<Value> std_eval(VM* vm, ast::NodePtr<ast::Expr>& expr) {
 
       case token::Type::Symbol: {
         std::string key = expr->v.str();
-        auto v = vm->global().Get(key);
+        auto v = vm->scope().Get(key);
         if (v) {
           return v;
         }
@@ -157,20 +157,24 @@ void std_print(VM* vm, std::vector<ast::NodePtr<ast::Expr>>& args) {
   std::cout << std::endl;
 }
 
-void run_block(ast::NodePtr<ast::Block>& block);
-
 void VM::run_funcall(ast::Funcall* node) {
   if (node->func->v.str() == "print") {
     std_print(this, node->arguments);
   } else if (auto v = global().Get(node->func->v.str())) {
+    // simulate push new stack frame and do funcall
+    debug_stack();
+    stack_.push_back(Frame(&global()));
     run_block(v->As<ast::Function*>()->block);
+    debug_stack();
+    stack_.pop_back();
+    debug_stack();
   } else {
     std::cerr << "func is not defined " << node->func->v.str() << std::endl;
   }
 }
 
 void VM::run_declaration(ast::Declaration* node) {
-  global().Set(node->var_name, std_eval(this, node->expr).value());
+  scope().Set(node->var_name, std_eval(this, node->expr).value());
 }
 
 void VM::run_if(ast::If* node) {

@@ -13,12 +13,24 @@ class VM {
   std::vector<Frame> stack_;
 
   Frame& global() { return stack_.at(0); }
+  Frame& scope() { return stack_.at(stack_.size() - 1); }
 
   VM() {
     stack_.push_back(Frame());
     globals_ = 0;
-    sp_ = 0;
   };
+
+  void debug_stack() {
+    std::cout << "-----start stack-----" << std::endl;
+    int i = 0;
+    for (auto s : stack_) {
+      std::cout << "---" << i << "---" << std::endl;
+      s.debug();
+      i++;
+    }
+
+    std::cout << "-----end start-----" << std::endl << std::endl;
+  }
 
  private:
   void run_block(ast::NodePtr<ast::Block>& block);
@@ -26,10 +38,8 @@ class VM {
   void run_declaration(ast::Declaration* node);
   void run_funcall(ast::Funcall* node);
 
-      // global storage area
-      int globals_;
-  // stack pointer
-  int sp_;
+  // global storage area
+  int globals_;
 };
 
 }  // namespace mygo
