@@ -32,12 +32,12 @@ TEST(2) {
   std::string src = R"(
 
 var a = 11.1001231
-func t1 (v float , b int){
+func t1 (arg1 float , arg2 int){
       var a = 12;
-      print ("run func",a)
+      print ("do func t1, a is ",a , " args is " , arg1 , " " , arg2)
 }
 
-t1(); 
+t1(6.66, 88); 
   
 )";
   std::vector<uint8_t> src_data(src.begin(), src.end());

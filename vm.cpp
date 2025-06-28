@@ -83,8 +83,9 @@ std::optional<Value> std_eval(VM* vm, ast::NodePtr<ast::Expr>& expr) {
         auto v = vm->scope().Get(key);
         if (v) {
           return v;
+        } else {
+          return std::nullopt;
         }
-        break;
       }
 
       default:
@@ -152,7 +153,8 @@ std::optional<Value> std_eval(VM* vm, ast::NodePtr<ast::Expr>& expr) {
 
 void std_print(VM* vm, std::vector<ast::NodePtr<ast::Expr>>& args) {
   for (auto& arg : args) {
-    std::cout << std_eval(vm, arg).value().ToString() << " ";
+    auto v = std_eval(vm, arg);
+    std::cout << (v.has_value() ? v->ToString() : "undefined") << " ";
   }
   std::cout << std::endl;
 }
@@ -160,11 +162,25 @@ void std_print(VM* vm, std::vector<ast::NodePtr<ast::Expr>>& args) {
 void VM::run_funcall(ast::Funcall* node) {
   if (node->func->v.str() == "print") {
     std_print(this, node->arguments);
-  } else if (auto v = global().Get(node->func->v.str())) {
+  } else if (auto func_maybe = global().Get(node->func->v.str())) {
     // simulate push new stack frame and do funcall
+    //
+    auto func = func_maybe->As<ast::Function*>();
     debug_stack();
     stack_.push_back(Frame(&global()));
-    run_block(v->As<ast::Function*>()->block);
+
+    assert(node->arguments.size() == func->args.size());
+
+    int i = 0;
+    for (auto& arg : node->arguments) {
+      std::string arg_name = func->args.at(i).first;
+      std::optional<Value> a = std_eval(this, arg);
+      assert(a.has_value());
+      scope().Set(arg_name, a.value());
+      i++;
+    }
+
+    run_block(func->block);
     debug_stack();
     stack_.pop_back();
     debug_stack();
