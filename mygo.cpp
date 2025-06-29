@@ -46,10 +46,11 @@ int main(int argc, char** argv) {
 
   auto stream = mygo::TokenStream(std::move(src_data));
   mygo::VM vm;
-  auto root = mygo::ast::Root::parse(stream);
-  if (root) {
-    LOG(INFO) << "root ast: " << root.value()->debug() << std::endl;
-    vm.run(root.value());
+  mygo::ast::Result<mygo::ast::Root> root_res = mygo::ast::Root::parse(stream);
+  if (root_res.isOk()) {
+    mygo::ast::NodePtr<mygo::ast::Root> root = root_res.takeValue();
+    LOG(INFO) << "root ast: " << root->debug() << std::endl;
+    vm.run(root);
     // std::cout << root.value()->debug() << std::endl;
   } else {
     std::cout << "parse error" << std::endl;

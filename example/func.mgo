@@ -1,5 +1,9 @@
-func t1 (){
-    var a = 11.1001231
-    print ("run func",a)
+func t1 (a int){
+    if (a > 11) {
+        print ("a is big than 11 ",a)
+    }else {
+      return;
+    }
+
 }
-t1()
+t1(12)

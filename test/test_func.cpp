@@ -17,14 +17,15 @@ TEST(1) {
 func ssfafdsfwe)";
   std::vector<uint8_t> src_data(src.begin(), src.end());
   auto stream = mygo::TokenStream(std::move(src_data));
-  auto root = mygo::ast::Root::parse(stream);
-  assert(root.has_value());
 
-  LOG(WARNING) << root.value()->start << root.value()->end
-               << stream.state().loc;
+  auto root_res = mygo::ast::Root::parse(stream);
+  assert(root_res.isOk());
+  mygo::ast::NodePtr<mygo::ast::Root> root = root_res.takeValue();
 
-  assert(root.value()->end.line == 7);
-  assert(root.value()->end.coloum == 1);
+  LOG(WARNING) << root->start << root->end << stream.state().loc;
+
+  assert(root->end.line == 7);
+  assert(root->end.coloum == 1);
   LOG(WARNING) << "test succeed" << std::endl;
 }
 
@@ -42,21 +43,22 @@ t1(6.66, 88);
 )";
   std::vector<uint8_t> src_data(src.begin(), src.end());
   auto stream = mygo::TokenStream(std::move(src_data));
-  auto root = mygo::ast::Root::parse(stream);
-  assert(root.has_value());
 
-  LOG(INFO) << root.value()->debug();
+  auto root_res = mygo::ast::Root::parse(stream);
+  assert(root_res.isOk());
+  mygo::ast::NodePtr<mygo::ast::Root> root = root_res.takeValue();
 
-  LOG(WARNING) << root.value()->nodes_.size() << std::endl;
+  LOG(INFO) << root->debug();
+
+  LOG(WARNING) << root->nodes_.size() << std::endl;
   LOG(WARNING) << stream.parse_error << std::endl;
 
-  assert(root.value()->nodes_.size() == 3);
+  assert(root->nodes_.size() == 3);
 
-  LOG(WARNING) << root.value()->start << root.value()->end << stream.state().loc
-               << std::endl;
+  LOG(WARNING) << root->start << root->end << stream.state().loc << std::endl;
 
   mygo::VM vm;
-  vm.run(root.value());
+  vm.run(root);
   LOG(WARNING) << "test succeed" << std::endl;
 }
 

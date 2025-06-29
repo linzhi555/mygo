@@ -1,6 +1,7 @@
 #include "ast.h"
 
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "logging.h"
@@ -8,20 +9,21 @@
 namespace mygo {
 namespace ast {
 
-std::optional<NodePtr<Funcall>> Funcall::parse(TokenStream& stream) {
+Result<Funcall> Funcall::parse(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
   auto res = std::make_unique<Funcall>();
 
-  std::optional<NodePtr<Expr>> f = Expr::parse(stream);
-  if (!f) return std::nullopt;
-  res->func = std::move(f.value());
+  Result<Expr> f = Expr::parse(stream);
+  if (f.isErr()) return Result<Funcall>::err("expect err");
+  res->func = std::move(f.takeValue());
 
   EXPECT_TOKEN(stream, token::Type::LParent);
+
   while (true) {
     auto expr = Expr::parse(stream);
-    if (expr) {
-      res->arguments.emplace_back(std::move(expr.value()));
+    if (expr.isOk()) {
+      res->arguments.emplace_back(expr.takeValue());
     } else {
       break;
     }
@@ -36,126 +38,135 @@ std::optional<NodePtr<Funcall>> Funcall::parse(TokenStream& stream) {
   EXPECT_TOKEN(stream, token::Type::RParent);
 
   guard.finish(res->start, res->end);
-  return res;
+  return Result<Funcall>::ok(std::move(res));
 };
 
-std::optional<NodePtr<Block>> Block::parse(TokenStream& stream) {
+Result<Block> Block::parse(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
   auto res = std::make_unique<Block>();
-  while (true) {
-    std::optional<NodePtr<Declaration>> decl;
-    std::optional<NodePtr<Funcall>> fcall;
-    std::optional<NodePtr<If>> if_node;
-    std::optional<NodePtr<Function>> func_node;
-
+  for (int i = 0; i < 10000; i++) {
+    std::cout << i << std::endl;
     SKIP_TOKEN(stream, token::Type::Enl);
-
-    if ((decl = Declaration::parse(stream))) {
-      res->nodes_.push_back(std::move(decl.value()));
-    } else if ((fcall = Funcall::parse(stream))) {
-      res->nodes_.push_back(std::move(fcall.value()));
-    } else if ((if_node = If::parse(stream))) {
-      res->nodes_.push_back(std::move(if_node.value()));
-
-    } else if ((func_node = Function::parse(stream))) {
-      res->nodes_.push_back(std::move(func_node.value()));
-
-    } else {
-      break;
+    {
+      Result<Declaration> decl = Declaration::parse(stream);
+      if (decl.isOk()) {
+        res->nodes_.push_back(decl.takeValue());
+        continue;
+      }
     }
 
-    EXPECT_TOKEN(stream, token::Type::Enl);
+    {
+      Result<Funcall> fcall = Funcall::parse(stream);
+      if (fcall.isOk()) {
+        res->nodes_.push_back(fcall.takeValue());
+        continue;
+      }
+    }
+
+    {
+      Result<If> if_node = If::parse(stream);
+      if (if_node.isOk()) {
+        res->nodes_.push_back(if_node.takeValue());
+        continue;
+      }
+    }
+
+    {
+      Result<Function> func_node = Function::parse(stream);
+      if (func_node.isOk()) {
+        res->nodes_.push_back(func_node.takeValue());
+        continue;
+      }
+    }
+    break;
   };
 
-  if (res->nodes_.empty()) return std::nullopt;
-
   guard.finish(res->start, res->end);
-  return res;
+  return Result<Block>::ok(std::move(res));
 };
 
-std::optional<NodePtr<Declaration>> Declaration::parse(TokenStream& stream) {
+Result<Declaration> Declaration::parse(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
   auto res = std::make_unique<Declaration>();
-  auto var_mutablity = stream.Peek();
-  if (var_mutablity->type() != token::Type::Var) return std::nullopt;
-  stream.Next();
+  EXPECT_TOKEN(stream, token::Type::Var)
 
-  if (!(stream.Peek()->type() == token::Type::Symbol)) return std::nullopt;
-  res->var_name = stream.Peek()->str();
-  stream.Next();
+  token::Value v;
+  EXPECT_GET_TOKEN(stream, token::Type::Symbol, "expect symbol", v);
+  res->var_name = v.str();
 
-  if (!(stream.Peek()->type() == token::Type::Assign)) return std::nullopt;
-  stream.Next();
+  EXPECT_TOKEN(stream, token::Type::Assign)
 
-  auto e = Expr::parse(stream);
-  if (!e) return std::nullopt;
-  res->expr = std::move(e.value());
+  Result<Expr> e = Expr::parse(stream);
+  if (e.isErr())
+    return Err(std::string("parsing expr error" + e.err_stack.at(0).msg));
+  res->expr = e.takeValue();
 
   guard.finish(res->start, res->end);
-  return res;
+  return Result<Declaration>::ok(std::move(res));
 }
 
-std::optional<NodePtr<Expr>> Expr::parse(TokenStream& stream) {
+Result<Expr> Expr::parse(TokenStream& stream) {
   return Expr::parse_with_greater(stream);
 }
 
-std::optional<NodePtr<Expr>> Expr::parse_with_greater(TokenStream& stream) {
+Result<Expr> Expr::parse_with_greater(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
-  auto expr0 = Expr::parse_with_plus(stream);
-  if (!expr0) return std::nullopt;
+  Result<Expr> temp = Expr::parse_with_plus(stream);
+  if (temp.isErr()) return Result<Expr>::err("parse expr error");
+  NodePtr<Expr> expr0 = temp.takeValue();
 
   auto t = stream.Peek()->type();
   if (t != token::Type::Greater && t != token::Type::Less &&
       t != token::Type::Equal) {
-    guard.finish(expr0.value()->start, expr0.value()->end);
-    return expr0;
+    guard.finish(expr0->start, expr0->end);
+    return Result<Expr>::ok(std::move(expr0));
   }
 
   stream.Next();
 
   auto multi = std::make_unique<Expr>();
 
-  auto expr1 = Expr::parse_with_plus(stream);
-  if (!expr1) return std::nullopt;
+  auto expr1_res = Expr::parse_with_plus(stream);
+  if (expr1_res.isErr()) return Result<Expr>::err("parse expr error");
 
   multi->ops.push_back(t);
-  multi->exprs.push_back(std::move(expr0.value()));
-  multi->exprs.push_back(std::move(expr1.value()));
+  multi->exprs.push_back(std::move(expr0));
+  multi->exprs.push_back(expr1_res.takeValue());
 
   guard.finish(multi->start, multi->end);
-  return multi;
+  return Result<Expr>::ok(std::move(multi));
 }
 
-std::optional<NodePtr<Expr>> Expr::parse_with_plus(TokenStream& stream) {
+Result<Expr> Expr::parse_with_plus(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
-  auto expr0 = Expr::parse_with_star(stream);
-  if (!expr0) {
-    return std::nullopt;
+  Result<Expr> expr0_res = Expr::parse_with_star(stream);
+  if (expr0_res.isErr()) {
+    return Result<Expr>::err("expr error error");
   }
   auto t = stream.Peek()->type();
   if (t != token::Type::Plus && t != token::Type::Sub) {
-    guard.finish(expr0.value()->start, expr0.value()->end);
-    return expr0;
+    guard.finish(expr0_res.value->start, expr0_res.value->end);
+    return expr0_res;
   }
 
   auto multi = std::make_unique<Expr>();
 
-  multi->exprs.push_back(std::move(expr0.value()));
+  multi->exprs.push_back(expr0_res.takeValue());
 
   for (;;) {
     auto t = stream.Peek()->type();
     if (t == token::Type::Plus || t == token::Type::Sub) {
       stream.Next();
       auto newexpr = Expr::parse_with_star(stream);
-      if (newexpr) {
+      if (newexpr.isOk()) {
         multi->ops.push_back(t);
-        multi->exprs.push_back(std::move(newexpr.value()));
+        multi->exprs.push_back(newexpr.takeValue());
       } else {
-        return std::nullopt;
+        return Result<Expr>::err("expect error");
       }
     } else {
       break;
@@ -163,38 +174,37 @@ std::optional<NodePtr<Expr>> Expr::parse_with_plus(TokenStream& stream) {
   }
 
   guard.finish(multi->start, multi->end);
-  return multi;
+  return Result<Expr>::ok(std::move(multi));
 }
 
-std::optional<NodePtr<Expr>> Expr::parse_with_star(TokenStream& stream) {
+Result<Expr> Expr::parse_with_star(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
-  auto expr0 = Expr::parse_atomic(stream);
-  if (!expr0) {
-    return std::nullopt;
-  } else {
+  auto expr0_res = Expr::parse_atomic(stream);
+  if (expr0_res.isErr()) {
+    return Result<Expr>::err("parse atomic expr");
   }
 
   auto t = stream.Peek()->type();
   if (t != token::Type::Star && t != token::Type::Slash) {
-    guard.finish(expr0.value()->start, expr0.value()->end);
-    return expr0;
+    guard.finish(expr0_res.value->start, expr0_res.value->end);
+    return expr0_res;
   }
 
   auto multi = std::make_unique<Expr>();
 
-  multi->exprs.push_back(std::move(expr0.value()));
+  multi->exprs.push_back(expr0_res.takeValue());
 
   for (;;) {
     auto t = stream.Peek()->type();
     if (t == token::Type::Star || t == token::Type::Slash) {
       stream.Next();
       auto newexpr = Expr::parse_atomic(stream);
-      if (newexpr) {
+      if (newexpr.isOk()) {
         multi->ops.push_back(t);
-        multi->exprs.push_back(std::move(newexpr.value()));
+        multi->exprs.push_back(newexpr.takeValue());
       } else {
-        return std::nullopt;
+        return Result<Expr>::err("parse atomic error");
       }
     } else {
       break;
@@ -202,15 +212,15 @@ std::optional<NodePtr<Expr>> Expr::parse_with_star(TokenStream& stream) {
   }
 
   guard.finish(multi->start, multi->end);
-  return multi;
+  return Result<Expr>::ok(std::move(multi));
 }
 
-std::optional<NodePtr<Expr>> Expr::parse_atomic(TokenStream& stream) {
+Result<Expr> Expr::parse_atomic(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
   auto v = stream.Peek();
   if (!v) {
-    return std::nullopt;
+    return Result<Expr>::err("parse atomic error");
   }
 
   switch (v->type()) {
@@ -226,24 +236,24 @@ std::optional<NodePtr<Expr>> Expr::parse_atomic(TokenStream& stream) {
       res->start = v->start;
       res->end = v->end;
       guard.finish(res->start, res->end);
-      return res;
+      return Result<Expr>::ok(std::move(res));
     }
 
     default:
-      return std::nullopt;
+      break;
   }
-
-  return std::nullopt;
+  return Result<Expr>::err("parse atomic error");
 };
 
-std::optional<NodePtr<Function>> Function::parse(TokenStream& stream) {
+Result<Function> Function::parse(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
   EXPECT_TOKEN(stream, token::Type::Func);
 
   NodePtr<Function> func_node = std::make_unique<Function>();
   std::string func_name;
-  if (!(stream.Peek()->type() == token::Type::Symbol)) return std::nullopt;
+  if (!(stream.Peek()->type() == token::Type::Symbol))
+    Result<Expr>::err("expect symbol");
   func_name = stream.Peek()->str();
   stream.Next();
 
@@ -274,41 +284,42 @@ std::optional<NodePtr<Function>> Function::parse(TokenStream& stream) {
   EXPECT_TOKEN_ERR(stream, token::Type::LBrace, "expect {");
 
   SKIP_TOKEN(stream, token::Type::Enl);
-  std::optional<NodePtr<Block>> block = Block::parse(stream);
-  if (!block) return std::nullopt;
+
+  Result<Block> block = Block::parse(stream);
+  if (block.isErr()) return Result<Function>::err("parse function error");
   EXPECT_TOKEN(stream, token::Type::RBrace);
 
   func_node->func_name = func_name;
 
-  func_node->block = std::move(block.value());
+  func_node->block = std::move(block.takeValue());
 
   guard.finish(func_node->start, func_node->end);
-  return func_node;
+  return Result<Function>::ok(std::move(func_node));
 }
 
-std::optional<NodePtr<If>> If::parse(TokenStream& stream) {
+Result<If> If::parse(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
   EXPECT_TOKEN(stream, token::Type::If);
   EXPECT_TOKEN(stream, token::Type::LParent);
-  std::optional<NodePtr<Expr>> expr = Expr::parse(stream);
-  if (!expr) return std::nullopt;
+  Result<Expr> expr = Expr::parse(stream);
+  if (expr.isErr()) return Err("parse if error");
   EXPECT_TOKEN(stream, token::Type::RParent);
 
   EXPECT_TOKEN(stream, token::Type::LBrace);
 
   SKIP_TOKEN(stream, token::Type::Enl);
-  std::optional<NodePtr<Block>> block = Block::parse(stream);
-  if (!block) return std::nullopt;
+  Result<Block> block = Block::parse(stream);
+  if (block.isErr()) return Err("parse block error");
   EXPECT_TOKEN(stream, token::Type::RBrace);
 
   NodePtr<If> if_node = std::make_unique<If>();
 
-  if_node->expr = std::move(expr.value());
-  if_node->block = std::move(block.value());
+  if_node->expr = std::move(expr.takeValue());
+  if_node->block = std::move(block.takeValue());
 
   guard.finish(if_node->start, if_node->end);
-  return if_node;
+  return Result<If>::ok(std::move(if_node));
 }
 
 }  // namespace ast

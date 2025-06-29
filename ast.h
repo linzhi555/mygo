@@ -1,7 +1,7 @@
 #pragma once
 
+#include <iostream>
 #include <memory>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -32,32 +32,32 @@ enum class Type {
     S.Next();                                     \
   }
 
-#define EXPECT_TOKEN(S, T)            \
-  if (!S.Peek()) return std::nullopt; \
-  if (S.Peek().value().type() != T) { \
-    return std::nullopt;              \
-  } else {                            \
-    S.Next();                         \
+#define EXPECT_TOKEN(S, T)                                \
+  if (!S.Peek()) return Err("expect token but get null"); \
+  if (S.Peek().value().type() != T) {                     \
+    return Err(std::string("expect token "));             \
+  } else {                                                \
+    S.Next();                                             \
   }
 
 #define EXPECT_TOKEN_ERR(S, T, ERR)   \
-  if (!S.Peek()) return std::nullopt; \
+  if (!S.Peek()) return Err(ERR);     \
   if (S.Peek().value().type() != T) { \
     S.parse_error = ERR;              \
-    return std::nullopt;              \
+    return Err(ERR);                  \
   } else {                            \
     S.Next();                         \
   }
 
-#define EXPECT_GET_TOKEN(S, T, ERR, RES) \
-  if (!S.Peek()) return std::nullopt;    \
-  if (S.Peek().value().type() != T) {    \
-    S.parse_error = ERR;                 \
-    return std::nullopt;                 \
-  } else {                               \
-    RES = S.Peek().value();              \
-    S.Next();                            \
-  }  // namespace ast
+#define EXPECT_GET_TOKEN(S, T, ERR, RES)                  \
+  if (!S.Peek()) return Err("expect token but get null"); \
+  if (S.Peek().value().type() != T) {                     \
+    S.parse_error = ERR;                                  \
+    return Err(ERR);                                      \
+  } else {                                                \
+    RES = S.Peek().value();                               \
+    S.Next();                                             \
+  }
 
 template <typename T>
 using NodePtr = std::unique_ptr<T>;
@@ -69,6 +69,38 @@ class Node {
 
   virtual enum Type Type() = 0;
   virtual std::string debug() = 0;
+};
+
+class Err {
+ public:
+  std::string msg;
+  Err(std::string_view m) : msg(m) {}
+};
+
+template <typename T>
+class Result {
+ public:
+  static Result<T> ok(NodePtr<T>&& v) {
+    Result<T> res;
+    res.value = std::move(v);
+    return res;
+  };
+
+  Result() = default;
+
+  Result(Err e) { err_stack.push_back(e); };
+
+  static Result<T> err(std::string_view view) {
+    Result res;
+    res.err_stack.push_back(Err(view));
+    return res;
+  };
+
+  NodePtr<T> value;
+  std::vector<Err> err_stack;
+  bool isOk() { return value.get() != nullptr; };
+  bool isErr() { return !isOk(); }
+  NodePtr<T>&& takeValue() { return std::move(value); }
 };
 
 class Expr : public Node {
@@ -107,11 +139,11 @@ class Expr : public Node {
     return e;
   }
 
-  static std::optional<NodePtr<Expr>> parse(TokenStream& stream);
-  static std::optional<NodePtr<Expr>> parse_with_greater(TokenStream& stream);
-  static std::optional<NodePtr<Expr>> parse_with_plus(TokenStream& stream);
-  static std::optional<NodePtr<Expr>> parse_with_star(TokenStream& stream);
-  static std::optional<NodePtr<Expr>> parse_atomic(TokenStream& stream);
+  static Result<Expr> parse(TokenStream& stream);
+  static Result<Expr> parse_with_greater(TokenStream& stream);
+  static Result<Expr> parse_with_plus(TokenStream& stream);
+  static Result<Expr> parse_with_star(TokenStream& stream);
+  static Result<Expr> parse_atomic(TokenStream& stream);
 };
 
 class Declaration : public Node {
@@ -122,7 +154,7 @@ class Declaration : public Node {
 
   enum Type Type() override { return Type::Declaration; };
 
-  static std::optional<std::unique_ptr<Declaration>> parse(TokenStream& stream);
+  static Result<Declaration> parse(TokenStream& stream);
 
   std::string debug() override {
     std::string s;
@@ -141,7 +173,7 @@ class Funcall : public Node {
 
   enum Type Type() override { return Type::Funcall; };
 
-  static std::optional<NodePtr<Funcall>> parse(TokenStream& stream);
+  static Result<Funcall> parse(TokenStream& stream);
 
   std::string debug() override {
     std::string s;
@@ -161,13 +193,14 @@ class Block : public Node {
   std::string debug() override {
     std::string res;
     for (auto& node : nodes_) {
+      std::cout << node->debug() << std::endl;
       res += node->debug();
       res += "\n";
     }
     return res;
   }
 
-  static std::optional<std::unique_ptr<Block>> parse(TokenStream& stream);
+  static Result<Block> parse(TokenStream& stream);
 };
 
 using Root = Block;
@@ -186,7 +219,7 @@ class Assignment : public Node {
     s += expr->debug();
     return s;
   };
-  static std::optional<NodePtr<Assignment>> parse(TokenStream& stream);
+  static Result<Assignment> parse(TokenStream& stream);
 };
 
 class Function : public Node {
@@ -209,7 +242,7 @@ class Function : public Node {
     res += block->debug();
     return res;
   };
-  static std::optional<NodePtr<Function>> parse(TokenStream& stream);
+  static Result<Function> parse(TokenStream& stream);
 };
 
 class If : public Node {
@@ -226,7 +259,7 @@ class If : public Node {
     res += block->debug();
     return res;
   };
-  static std::optional<NodePtr<If>> parse(TokenStream& stream);
+  static Result<If> parse(TokenStream& stream);
 };
 
 class For : public Node {
