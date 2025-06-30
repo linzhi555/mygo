@@ -8,6 +8,10 @@ struct Loc {
   Loc(const Loc&) = default;
   Loc() : line(1), coloum(1) {};
 
+  bool operator==(const Loc& other) {
+    return line == other.line && coloum == other.coloum;
+  }
+
   Loc(int l, int c) : line(l), coloum(c) {}
   std::string ToString() {
     return std::string() + "(" + std::to_string(line) + "," +

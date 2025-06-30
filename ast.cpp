@@ -15,7 +15,7 @@ Result<Funcall> Funcall::parse(TokenStream& stream) {
   auto res = std::make_unique<Funcall>();
 
   Result<Expr> f = Expr::parse(stream);
-  if (f.isErr()) return Result<Funcall>::err("expect err");
+  if (f.isErr()) return Err(stream.loc(), "expect err");
   res->func = std::move(f.takeValue());
 
   EXPECT_TOKEN(stream, token::Type::LParent);
@@ -70,6 +70,12 @@ Result<Block> Block::parse(TokenStream& stream) {
         res->nodes_.push_back(if_node.takeValue());
         continue;
       }
+
+      Err e = if_node.takeErr();
+      if (e.top().first != stream.loc()) {
+        return Err(if_node.takeErr(), stream.loc(),
+                   std::string("parse if error"));
+      }
     }
 
     {
@@ -78,6 +84,9 @@ Result<Block> Block::parse(TokenStream& stream) {
         res->nodes_.push_back(func_node.takeValue());
         continue;
       }
+      Err e = func_node.takeErr();
+      if (e.top().first != stream.loc())
+        return Err(std::move(e), stream.loc(), std::string("parse func error"));
     }
     break;
   };
@@ -99,8 +108,7 @@ Result<Declaration> Declaration::parse(TokenStream& stream) {
   EXPECT_TOKEN(stream, token::Type::Assign)
 
   Result<Expr> e = Expr::parse(stream);
-  if (e.isErr())
-    return Err(std::string("parsing expr error" + e.err_stack.at(0).msg));
+  if (e.isErr()) return (Err(e.takeErr(), stream.loc(), "parse Expr error"));
   res->expr = e.takeValue();
 
   guard.finish(res->start, res->end);
@@ -115,7 +123,7 @@ Result<Expr> Expr::parse_with_greater(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
   Result<Expr> temp = Expr::parse_with_plus(stream);
-  if (temp.isErr()) return Result<Expr>::err("parse expr error");
+  if (temp.isErr()) return Err(stream.loc(), "parse expr error");
   NodePtr<Expr> expr0 = temp.takeValue();
 
   auto t = stream.Peek()->type();
@@ -130,7 +138,7 @@ Result<Expr> Expr::parse_with_greater(TokenStream& stream) {
   auto multi = std::make_unique<Expr>();
 
   auto expr1_res = Expr::parse_with_plus(stream);
-  if (expr1_res.isErr()) return Result<Expr>::err("parse expr error");
+  if (expr1_res.isErr()) return Err(stream.loc(), "parse expr error");
 
   multi->ops.push_back(t);
   multi->exprs.push_back(std::move(expr0));
@@ -145,7 +153,7 @@ Result<Expr> Expr::parse_with_plus(TokenStream& stream) {
 
   Result<Expr> expr0_res = Expr::parse_with_star(stream);
   if (expr0_res.isErr()) {
-    return Result<Expr>::err("expr error error");
+    return Err(stream.loc(), "parse expr with error");
   }
   auto t = stream.Peek()->type();
   if (t != token::Type::Plus && t != token::Type::Sub) {
@@ -166,7 +174,7 @@ Result<Expr> Expr::parse_with_plus(TokenStream& stream) {
         multi->ops.push_back(t);
         multi->exprs.push_back(newexpr.takeValue());
       } else {
-        return Result<Expr>::err("expect error");
+        return Err(stream.loc(), "parse expr error");
       }
     } else {
       break;
@@ -182,7 +190,7 @@ Result<Expr> Expr::parse_with_star(TokenStream& stream) {
 
   auto expr0_res = Expr::parse_atomic(stream);
   if (expr0_res.isErr()) {
-    return Result<Expr>::err("parse atomic expr");
+    return Err(stream.loc(), "parse atomic expr error");
   }
 
   auto t = stream.Peek()->type();
@@ -204,7 +212,7 @@ Result<Expr> Expr::parse_with_star(TokenStream& stream) {
         multi->ops.push_back(t);
         multi->exprs.push_back(newexpr.takeValue());
       } else {
-        return Result<Expr>::err("parse atomic error");
+        return Err(stream.loc(), "parse expr with star error");
       }
     } else {
       break;
@@ -220,7 +228,7 @@ Result<Expr> Expr::parse_atomic(TokenStream& stream) {
 
   auto v = stream.Peek();
   if (!v) {
-    return Result<Expr>::err("parse atomic error");
+    return Err(stream.loc(), "parse atomic error");
   }
 
   switch (v->type()) {
@@ -242,7 +250,7 @@ Result<Expr> Expr::parse_atomic(TokenStream& stream) {
     default:
       break;
   }
-  return Result<Expr>::err("parse atomic error");
+  return Err(stream.loc(), "parse atomic error");
 };
 
 Result<Function> Function::parse(TokenStream& stream) {
@@ -253,7 +261,7 @@ Result<Function> Function::parse(TokenStream& stream) {
   NodePtr<Function> func_node = std::make_unique<Function>();
   std::string func_name;
   if (!(stream.Peek()->type() == token::Type::Symbol))
-    Result<Expr>::err("expect symbol");
+    Err(stream.loc(), "expect symbol");
   func_name = stream.Peek()->str();
   stream.Next();
 
@@ -285,13 +293,14 @@ Result<Function> Function::parse(TokenStream& stream) {
 
   SKIP_TOKEN(stream, token::Type::Enl);
 
-  Result<Block> block = Block::parse(stream);
-  if (block.isErr()) return Result<Function>::err("parse function error");
+  Result<Block> block_res = Block::parse(stream);
+  if (block_res.isErr())
+    return Err(block_res.takeErr(), stream.loc(), "parse block error");
   EXPECT_TOKEN(stream, token::Type::RBrace);
 
   func_node->func_name = func_name;
 
-  func_node->block = std::move(block.takeValue());
+  func_node->block = std::move(block_res.takeValue());
 
   guard.finish(func_node->start, func_node->end);
   return Result<Function>::ok(std::move(func_node));
@@ -303,20 +312,24 @@ Result<If> If::parse(TokenStream& stream) {
   EXPECT_TOKEN(stream, token::Type::If);
   EXPECT_TOKEN(stream, token::Type::LParent);
   Result<Expr> expr = Expr::parse(stream);
-  if (expr.isErr()) return Err("parse if error");
+  if (expr.isErr()) return Err(stream.loc(), "parse if error");
   EXPECT_TOKEN(stream, token::Type::RParent);
 
   EXPECT_TOKEN(stream, token::Type::LBrace);
 
   SKIP_TOKEN(stream, token::Type::Enl);
-  Result<Block> block = Block::parse(stream);
-  if (block.isErr()) return Err("parse block error");
+  Result<Block> block_res = Block::parse(stream);
+  if (block_res.isErr())
+    return Err(
+        block_res.takeErr(), stream.loc(),
+        std::string("parse if error at") + stream.state().loc.ToString());
+
   EXPECT_TOKEN(stream, token::Type::RBrace);
 
   NodePtr<If> if_node = std::make_unique<If>();
 
   if_node->expr = std::move(expr.takeValue());
-  if_node->block = std::move(block.takeValue());
+  if_node->block = std::move(block_res.takeValue());
 
   guard.finish(if_node->start, if_node->end);
   return Result<If>::ok(std::move(if_node));

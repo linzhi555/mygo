@@ -6,8 +6,6 @@
 namespace mygo {
 class TokenStream {
  public:
-  std::string parse_error;
-
   TokenStream(std::vector<uint8_t>&& src);
   void Next();
   std::optional<token::Value> Peek();
@@ -17,6 +15,8 @@ class TokenStream {
     int pos = 0;
     Loc loc;
   };
+
+  Loc loc() { return state_.loc; }
 
   // A respectful  guard who guard the state the of tokenstream.
   class StateGuard {

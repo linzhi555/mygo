@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -32,31 +33,29 @@ enum class Type {
     S.Next();                                     \
   }
 
-#define EXPECT_TOKEN(S, T)                                \
-  if (!S.Peek()) return Err("expect token but get null"); \
-  if (S.Peek().value().type() != T) {                     \
-    return Err(std::string("expect token "));             \
-  } else {                                                \
-    S.Next();                                             \
+#define EXPECT_TOKEN(S, T)                                         \
+  if (!S.Peek()) return Err(S.loc(), "expect token but get null"); \
+  if (S.Peek().value().type() != T) {                              \
+    return Err(S.loc(), std::string("expect token "));             \
+  } else {                                                         \
+    S.Next();                                                      \
   }
 
-#define EXPECT_TOKEN_ERR(S, T, ERR)   \
-  if (!S.Peek()) return Err(ERR);     \
-  if (S.Peek().value().type() != T) { \
-    S.parse_error = ERR;              \
-    return Err(ERR);                  \
-  } else {                            \
-    S.Next();                         \
+#define EXPECT_TOKEN_ERR(S, T, ERR)        \
+  if (!S.Peek()) return Err(S.loc(), ERR); \
+  if (S.Peek().value().type() != T) {      \
+    return Err(S.loc(), ERR);              \
+  } else {                                 \
+    S.Next();                              \
   }
 
-#define EXPECT_GET_TOKEN(S, T, ERR, RES)                  \
-  if (!S.Peek()) return Err("expect token but get null"); \
-  if (S.Peek().value().type() != T) {                     \
-    S.parse_error = ERR;                                  \
-    return Err(ERR);                                      \
-  } else {                                                \
-    RES = S.Peek().value();                               \
-    S.Next();                                             \
+#define EXPECT_GET_TOKEN(S, T, ERR, RES)                           \
+  if (!S.Peek()) return Err(S.loc(), "expect token but get null"); \
+  if (S.Peek().value().type() != T) {                              \
+    return Err(S.loc(), ERR);                                      \
+  } else {                                                         \
+    RES = S.Peek().value();                                        \
+    S.Next();                                                      \
   }
 
 template <typename T>
@@ -73,8 +72,32 @@ class Node {
 
 class Err {
  public:
-  std::string msg;
-  Err(std::string_view m) : msg(m) {}
+  Err() = default;
+  Err(Loc loc, std::string_view msg) { err_stack_.emplace_back(loc, msg); }
+  Err(Err&& old, Loc loc, std::string_view msg) {
+    err_stack_ = std::move(old.err_stack_);
+    err_stack_.emplace_back(loc, msg);
+  }
+
+  int depth() { return err_stack_.size(); }
+
+  using Item = std::pair<Loc, std::string>;
+  std::string toString() {
+    std::string res = "";
+    for (auto& s : err_stack_) {
+      res += s.first.ToString();
+      res += s.second;
+      res += "\n";
+    }
+    return res;
+  }
+  const Item top() {
+    assert(err_stack_.size() > 0);
+    return err_stack_.at(err_stack_.size() - 1);
+  }
+
+ private:
+  std::vector<Item> err_stack_;
 };
 
 template <typename T>
@@ -88,19 +111,20 @@ class Result {
 
   Result() = default;
 
-  Result(Err e) { err_stack.push_back(e); };
+  Result(Err e) { err_ = e; }
 
-  static Result<T> err(std::string_view view) {
-    Result res;
-    res.err_stack.push_back(Err(view));
-    return res;
-  };
+  // static Result<T> err(std::string_view view) {
+  //   Result res;
+  //   res.err_ = Err(view);
+  //   return res;
+  // };
 
   NodePtr<T> value;
-  std::vector<Err> err_stack;
+  Err err_;
   bool isOk() { return value.get() != nullptr; };
   bool isErr() { return !isOk(); }
   NodePtr<T>&& takeValue() { return std::move(value); }
+  Err&& takeErr() { return std::move(err_); }
 };
 
 class Expr : public Node {
