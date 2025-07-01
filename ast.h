@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cassert>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
@@ -33,12 +32,13 @@ enum class Type {
     S.Next();                                     \
   }
 
-#define EXPECT_TOKEN(S, T)                                         \
-  if (!S.Peek()) return Err(S.loc(), "expect token but get null"); \
-  if (S.Peek().value().type() != T) {                              \
-    return Err(S.loc(), std::string("expect token "));             \
-  } else {                                                         \
-    S.Next();                                                      \
+#define EXPECT_TOKEN(S, T)                                              \
+  if (!S.Peek())                                                        \
+    return Err(S.loc(), std::string("expect token but get null") + #T); \
+  if (S.Peek().value().type() != T) {                                   \
+    return Err(S.loc(), std::string("expect token ") + #T);             \
+  } else {                                                              \
+    S.Next();                                                           \
   }
 
 #define EXPECT_TOKEN_ERR(S, T, ERR)        \
@@ -49,13 +49,14 @@ enum class Type {
     S.Next();                              \
   }
 
-#define EXPECT_GET_TOKEN(S, T, ERR, RES)                           \
-  if (!S.Peek()) return Err(S.loc(), "expect token but get null"); \
-  if (S.Peek().value().type() != T) {                              \
-    return Err(S.loc(), ERR);                                      \
-  } else {                                                         \
-    RES = S.Peek().value();                                        \
-    S.Next();                                                      \
+#define EXPECT_GET_TOKEN(S, T, ERR, RES)                                \
+  if (!S.Peek())                                                        \
+    return Err(S.loc(), std::string("expect token but get null") + #T); \
+  if (S.Peek().value().type() != T) {                                   \
+    return Err(S.loc(), std::string("expect token ") + #T);             \
+  } else {                                                              \
+    RES = S.Peek().value();                                             \
+    S.Next();                                                           \
   }
 
 template <typename T>
@@ -83,7 +84,7 @@ class Err {
 
   using Item = std::pair<Loc, std::string>;
   std::string toString() {
-    std::string res = "";
+    std::string res = "----backtrace-----\n";
     for (auto& s : err_stack_) {
       res += s.first.ToString();
       res += s.second;
@@ -217,7 +218,6 @@ class Block : public Node {
   std::string debug() override {
     std::string res;
     for (auto& node : nodes_) {
-      std::cout << node->debug() << std::endl;
       res += node->debug();
       res += "\n";
     }
@@ -255,7 +255,7 @@ class Function : public Node {
   enum Type Type() override { return Type::Function; };
   std::string debug() override {
     std::string res;
-    res += "Function:\n";
+    res += "Function:{\n";
 
     int i = 1;
     for (const auto& p : args) {
@@ -264,6 +264,7 @@ class Function : public Node {
     }
 
     res += block->debug();
+    res += "}\n";
     return res;
   };
   static Result<Function> parse(TokenStream& stream);

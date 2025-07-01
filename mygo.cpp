@@ -49,10 +49,11 @@ int main(int argc, char** argv) {
   mygo::ast::Result<mygo::ast::Root> root_res = mygo::ast::Root::parse(stream);
   if (root_res.isOk()) {
     mygo::ast::NodePtr<mygo::ast::Root> root = root_res.takeValue();
-    LOG(INFO) << "root ast: " << root->debug() << std::endl;
+    LOG(INFO) << "root ast: " << root->nodes_.size() << root->debug()
+              << std::endl;
     vm.run(root);
     // std::cout << root.value()->debug() << std::endl;
   } else {
-    std::cout << "parse error" << std::endl;
+    std::cout << "parse error:" << root_res.takeErr().toString() << std::endl;
   }
 }

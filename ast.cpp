@@ -310,10 +310,8 @@ Result<If> If::parse(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
   EXPECT_TOKEN(stream, token::Type::If);
-  EXPECT_TOKEN(stream, token::Type::LParent);
   Result<Expr> expr = Expr::parse(stream);
-  if (expr.isErr()) return Err(stream.loc(), "parse if error");
-  EXPECT_TOKEN(stream, token::Type::RParent);
+  if (expr.isErr()) return Err(stream.loc(), "parse expr error");
 
   EXPECT_TOKEN(stream, token::Type::LBrace);
 

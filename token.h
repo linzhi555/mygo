@@ -28,6 +28,7 @@ namespace token {
   T(Star, "*")        \
   T(Slash, "/")       \
   T(Func, "func")     \
+  T(Return, "return") \
   T(LBrace, "{")      \
   T(RBrace, "}")      \
   T(LParent, "(")     \
