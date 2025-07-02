@@ -257,10 +257,12 @@ class Function : public Node {
     std::string res;
     res += "Function:{\n";
 
-    int i = 1;
     for (const auto& p : args) {
-      res += "arg" + std::to_string(i) + " " + p.first + " " + p.second + "\n";
-      i++;
+      res += "arg " + p.first + " " + p.second + "\n";
+    }
+
+    for (const auto& p : returns) {
+      res += "return " + p + "\n";
     }
 
     res += block->debug();

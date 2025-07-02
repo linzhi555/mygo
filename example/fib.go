@@ -1,4 +1,4 @@
-func fib(a int) {
+func fib(a int) int {
 	if a < 2 {
 		print("a<2")
 	}

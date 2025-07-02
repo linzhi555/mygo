@@ -58,7 +58,7 @@ TEST(3) {
   std::string src = R"(
 
 var a = 11.1001231
-func t1 (arg1 float , arg2 int){
+func t1 (arg1 float , arg2 int) int {
       var a = 12;
       print ("do func t1, a is ",a , " args is " , arg1 , " " , arg2)
 }
@@ -73,7 +73,7 @@ t1(6.66, 88);
   assert(root_res.isOk());
   mygo::ast::NodePtr<mygo::ast::Root> root = root_res.takeValue();
 
-  LOG(INFO) << root->debug();
+  LOG(WARNING) << root->debug();
 
   LOG(WARNING) << root->nodes_.size() << std::endl;
 

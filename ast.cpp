@@ -1,5 +1,6 @@
 #include "ast.h"
 
+#include <cassert>
 #include <memory>
 #include <string>
 #include <utility>
@@ -288,6 +289,19 @@ Result<Function> Function::parse(TokenStream& stream) {
 
   EXPECT_TOKEN_ERR(stream, token::Type::RParent,
                    (std::string("expect ) but get") + stream.Peek()->debug()));
+
+  // parse returns, allow max 99 return
+  for (int i = 0; i < 100; i++) {
+    assert(i < 99);
+    auto t = stream.Peek();
+    if (t && t->type() == token::Type::Symbol) {
+      func_node->returns.push_back(t->str());
+      stream.Next();
+      continue;
+    } else {
+      break;
+    }
+  }
 
   EXPECT_TOKEN_ERR(stream, token::Type::LBrace, "expect {");
 
