@@ -20,6 +20,7 @@ enum class Type {
   Assignment,
   Funcall,
   Statement,
+  Return,
 };
 
 #define SKIP_TOKEN(S, T)                             \
@@ -225,6 +226,23 @@ class Block : public Node {
   }
 
   static Result<Block> parse(TokenStream& stream);
+};
+
+class Return : public Node {
+ public:
+  enum Type Type() override { return Type::Return; };
+  std::vector<NodePtr<Expr>> ret_exprs;
+  std::string debug() override {
+    std::string res;
+    res += "Return\n";
+    for (const NodePtr<Expr>& ret : ret_exprs) {
+      res += ret->debug();
+    }
+
+    return res;
+  }
+
+  static Result<Return> parse(TokenStream& stream);
 };
 
 using Root = Block;

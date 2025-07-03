@@ -42,12 +42,30 @@ Result<Funcall> Funcall::parse(TokenStream& stream) {
   return Result<Funcall>::ok(std::move(res));
 };
 
+Result<Return> Return::parse(TokenStream& stream) {
+  TokenStream::StateGuard guard(stream);
+  auto res = std::make_unique<Return>();
+  EXPECT_TOKEN(stream, token::Type::Return);
+
+  for (int i = 0;; i++) {
+    assert(i < 100);
+    Result e = Expr::parse(stream);
+    if (e.isOk()) {
+      res->ret_exprs.push_back(std::move(e.takeValue()));
+    } else {
+      break;
+    }
+  }
+
+  guard.finish(res->start, res->end);
+  return Result<Return>::ok(std::move(res));
+}
+
 Result<Block> Block::parse(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
   auto res = std::make_unique<Block>();
-  for (int i = 0; i < 10000; i++) {
-    std::cout << i << std::endl;
+  for (int i = 0; i < 100000; i++) {
     SKIP_TOKEN(stream, token::Type::Enl);
     {
       Result<Declaration> decl = Declaration::parse(stream);
@@ -89,6 +107,19 @@ Result<Block> Block::parse(TokenStream& stream) {
       if (e.top().first != stream.loc())
         return Err(std::move(e), stream.loc(), std::string("parse func error"));
     }
+
+    {
+      Result<Return> node = Return::parse(stream);
+      if (node.isOk()) {
+        res->nodes_.push_back(node.takeValue());
+        continue;
+      }
+      Err e = node.takeErr();
+      if (e.top().first != stream.loc())
+        return Err(std::move(e), stream.loc(),
+                   std::string("parse return error"));
+    }
+
     break;
   };
 
