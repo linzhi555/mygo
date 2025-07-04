@@ -166,26 +166,26 @@ void VM::run_funcall(ast::Funcall* node) {
     // simulate push new stack frame and do funcall
     //
     auto func = func_maybe->As<ast::Function*>();
-    debug_stack();
-    stack_.push_back(Frame(&global()));
 
     assert(node->arguments.size() == func->args.size());
 
     int i = 0;
+
+    auto newframe = Frame(&global());
+
     for (auto& arg : node->arguments) {
       std::string arg_name = func->args.at(i).first;
       std::optional<Value> a = std_eval(this, arg);
       assert(a.has_value());
-      scope().Set(arg_name, a.value());
+      newframe.Set(arg_name, a.value());
       i++;
     }
 
+    stack_.push_back(newframe);
     run_block(func->block);
-    debug_stack();
     stack_.pop_back();
-    debug_stack();
   } else {
-    std::cerr << "func is not defined " << node->func->v.str() << std::endl;
+    exit_ = ExitPanic;
   }
 }
 
@@ -202,6 +202,10 @@ void VM::run_if(ast::If* node) {
 
 void VM::run_block(ast::NodePtr<ast::Block>& block) {
   for (const std::unique_ptr<ast::Node>& node : block->nodes_) {
+    if (this->exit_ == ExitNormal || this->exit_ == ExitPanic) {
+      return;
+    }
+
     switch (node->Type()) {
       case ast::Type::Funcall: {
         ast::Funcall* f = static_cast<ast::Funcall*>(node.get());
@@ -228,7 +232,13 @@ void VM::run_block(ast::NodePtr<ast::Block>& block) {
         break;
       }
 
+      case ast::Type::Return: {
+        this->exit_ = ExitNormal;
+        break;
+      }
+
       default: {
+        this->exit_ = ExitPanic;
         break;
       }
     }

@@ -61,8 +61,12 @@ TEST(3) {
 var a = 11.1001231
 func t1 (arg1 float , arg2 int) int {
       var a = 12;
+
       print ("do func t1, a is ",a , " args is " , arg1 , " " , arg2)
+
       return a
+
+      print ("do func t1, a is ",a , " args is " , arg1 , " " , arg2)
 }
 
 t1(6.66, 88); 

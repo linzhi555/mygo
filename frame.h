@@ -5,6 +5,7 @@
 #include <string_view>
 #include <unordered_map>
 
+#include "logging.h"
 #include "optional"
 #include "value.h"
 
@@ -24,7 +25,7 @@ class Frame {
 
   void debug() {
     for (auto k : vals_) {
-      std::cout << k.first << " " << k.second.ToString() << std::endl;
+      LOG(INFO) << k.first << " " << k.second.ToString() << std::endl;
     }
   }
 

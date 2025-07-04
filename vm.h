@@ -1,9 +1,11 @@
 #pragma once
 
+#include <string_view>
 #include <vector>
 
 #include "ast.h"
 #include "frame.h"
+#include "logging.h"
 namespace mygo {
 
 class VM {
@@ -21,18 +23,25 @@ class VM {
   };
 
   void debug_stack() {
-    std::cout << "-----start stack-----" << std::endl;
+    LOG(INFO) << "-----start stack-----" << std::endl;
     int i = 0;
     for (auto s : stack_) {
-      std::cout << "---" << i << "---" << std::endl;
+      LOG(INFO) << "---" << i << "---" << std::endl;
       s.debug();
       i++;
     }
 
-    std::cout << "-----end start-----" << std::endl << std::endl;
+    LOG(INFO) << "-----end start-----" << std::endl << std::endl;
   }
 
  private:
+  using ExitCode = std::string_view;
+  static constexpr ExitCode NoExit = "NoExit";
+  static constexpr ExitCode ExitNormal = "ExitNormal";
+  static constexpr ExitCode ExitPanic = "ExitPanic";
+
+  ExitCode exit_ = NoExit;
+
   void run_block(ast::NodePtr<ast::Block>& block);
   void run_if(ast::If* node);
   void run_declaration(ast::Declaration* node);

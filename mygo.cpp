@@ -15,8 +15,8 @@
 //)";
 
 int main(int argc, char** argv) {
-  // set_debug_level(NOLOG);
-  set_debug_level(INFO);
+  set_debug_level(NOLOG);
+  // set_debug_level(INFO);
   LOG(INFO) << "args";
   for (int i = 0; i < argc; i++) {
     LOG(INFO) << " " << argv[i];
