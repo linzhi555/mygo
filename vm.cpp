@@ -209,8 +209,11 @@ void VM::run_block(ast::NodePtr<ast::Block>& block) {
     switch (node->Type()) {
       case ast::Type::Funcall: {
         ast::Funcall* f = static_cast<ast::Funcall*>(node.get());
-
         run_funcall(f);
+        if (exit_ == ExitNormal) {
+          exit_ = NoExit;
+        }
+
         break;
       }
 
