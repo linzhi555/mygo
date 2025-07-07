@@ -1,0 +1,11 @@
+func acc (a int) int {
+    if a < 2 {
+        return a
+    }
+    return a + acc(a-1)
+}
+
+var result = acc(5)
+
+print(result)
+

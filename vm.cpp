@@ -60,8 +60,8 @@ std::optional<Value> operator_equal(Value v1, Value v2) {
 
 }  // namespace
 
-std::optional<Value> std_eval(VM* vm, ast::NodePtr<ast::Expr>& expr) {
-  if (expr->is_atomic) {
+std::optional<Value> std_eval(VM* vm, ast::Expr* expr) {
+  if (expr->etype_ == ast::ExprType::TOKEN) {
     switch (expr->v.type()) {
       case token::Type::Int:
         return Value::Make<int>(expr->v.i());
@@ -101,8 +101,8 @@ std::optional<Value> std_eval(VM* vm, ast::NodePtr<ast::Expr>& expr) {
 
     assert(expr->exprs.size() == 2);
 
-    auto v1 = std_eval(vm, expr->exprs.at(0));
-    auto v2 = std_eval(vm, expr->exprs.at(1));
+    auto v1 = std_eval(vm, expr->exprs.at(0).get());
+    auto v2 = std_eval(vm, expr->exprs.at(1).get());
 
     if (!v1 || !v2) return std::nullopt;
     switch (t) {
@@ -118,14 +118,14 @@ std::optional<Value> std_eval(VM* vm, ast::NodePtr<ast::Expr>& expr) {
   } while (false);
 
   auto it = expr->exprs.begin();
-  auto v1 = std_eval(vm, *it);
+  auto v1 = std_eval(vm, it->get());
   if (v1->type != Value::Int) return std::nullopt;
   int res = std::get<int>(v1->data);
   it++;
 
   for (auto op_it = expr->ops.begin();
        it != expr->exprs.end() && op_it != expr->ops.end(); it++, op_it++) {
-    auto temp = std_eval(vm, *it);
+    auto temp = std_eval(vm, it->get());
 
     if (temp && temp.value().type == Value::Int) {
       int i_data = std::get<int>(temp->data);
@@ -151,31 +151,40 @@ std::optional<Value> std_eval(VM* vm, ast::NodePtr<ast::Expr>& expr) {
   return Value::Make<int>(res);
 }
 
-void std_print(VM* vm, std::vector<ast::NodePtr<ast::Expr>>& args) {
-  for (auto& arg : args) {
+void std_print(VM* vm, std::vector<ast::Expr*>& args) {
+  for (ast::Expr* arg : args) {
     auto v = std_eval(vm, arg);
     std::cout << (v.has_value() ? v->ToString() : "undefined") << " ";
   }
   std::cout << std::endl;
 }
 
-void VM::run_funcall(ast::Funcall* node) {
-  if (node->func->v.str() == "print") {
-    std_print(this, node->arguments);
-  } else if (auto func_maybe = global().Get(node->func->v.str())) {
+void VM::run_funcall(ast::Expr* node) {
+  assert(node->etype_ == ast::ExprType::FUNCALL);
+  assert(node->exprs.size() >= 1);
+  ast::NodePtr<ast::Expr>& f = node->exprs.at(0);
+
+  if (f->v.str() == "print") {
+    std::vector<ast::Expr*> args;
+    for (auto it = node->exprs.begin() + 1; it != node->exprs.end(); it++) {
+      args.push_back(it->get());
+    }
+
+    std_print(this, args);
+  } else if (auto func_maybe = global().Get(f->v.str())) {
     // simulate push new stack frame and do funcall
     //
     auto func = func_maybe->As<ast::Function*>();
 
-    assert(node->arguments.size() == func->args.size());
+    assert(node->exprs.size() - 1 == func->args.size());
 
     int i = 0;
 
     auto newframe = Frame(&global());
 
-    for (auto& arg : node->arguments) {
+    for (auto it = node->exprs.begin() + 1; it != node->exprs.end(); it++) {
       std::string arg_name = func->args.at(i).first;
-      std::optional<Value> a = std_eval(this, arg);
+      std::optional<Value> a = std_eval(this, it->get());
       assert(a.has_value());
       newframe.Set(arg_name, a.value());
       i++;
@@ -190,11 +199,11 @@ void VM::run_funcall(ast::Funcall* node) {
 }
 
 void VM::run_declaration(ast::Declaration* node) {
-  scope().Set(node->var_name, std_eval(this, node->expr).value());
+  scope().Set(node->var_name, std_eval(this, node->expr.get()).value());
 }
 
 void VM::run_if(ast::If* node) {
-  std::optional<Value> v = std_eval(this, node->expr);
+  std::optional<Value> v = std_eval(this, node->expr.get());
   if (v && v->type == Value::Bool && std::get<bool>(v->data)) {
     run_block(node->block);
   }
@@ -207,13 +216,14 @@ void VM::run_block(ast::NodePtr<ast::Block>& block) {
     }
 
     switch (node->Type()) {
-      case ast::Type::Funcall: {
-        ast::Funcall* f = static_cast<ast::Funcall*>(node.get());
-        run_funcall(f);
-        if (exit_ == ExitNormal) {
-          exit_ = NoExit;
+      case ast::Type::Expr: {
+        ast::Expr* expr = static_cast<ast::Expr*>(node.get());
+        if (expr->etype_ == ast::ExprType::FUNCALL) {
+          std_eval(this, expr);
+          if (exit_ == ExitNormal) {
+            exit_ = NoExit;
+          }
         }
-
         break;
       }
 

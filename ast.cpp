@@ -10,38 +10,6 @@
 namespace mygo {
 namespace ast {
 
-Result<Funcall> Funcall::parse(TokenStream& stream) {
-  TokenStream::StateGuard guard(stream);
-
-  auto res = std::make_unique<Funcall>();
-
-  Result<Expr> f = Expr::parse(stream);
-  if (f.isErr()) return Err(stream.loc(), "expect err");
-  res->func = std::move(f.takeValue());
-
-  EXPECT_TOKEN(stream, token::Type::LParent);
-
-  while (true) {
-    auto expr = Expr::parse(stream);
-    if (expr.isOk()) {
-      res->arguments.emplace_back(expr.takeValue());
-    } else {
-      break;
-    }
-
-    if (stream.Peek() && stream.Peek()->type() == token::Type::Comma) {
-      stream.Next();
-    } else {
-      break;
-    }
-  }
-
-  EXPECT_TOKEN(stream, token::Type::RParent);
-
-  guard.finish(res->start, res->end);
-  return Result<Funcall>::ok(std::move(res));
-};
-
 Result<Return> Return::parse(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
   auto res = std::make_unique<Return>();
@@ -76,9 +44,9 @@ Result<Block> Block::parse(TokenStream& stream) {
     }
 
     {
-      Result<Funcall> fcall = Funcall::parse(stream);
-      if (fcall.isOk()) {
-        res->nodes_.push_back(fcall.takeValue());
+      Result<Expr> expr = Expr::parse(stream);
+      if (expr.isOk()) {
+        res->nodes_.push_back(expr.takeValue());
         continue;
       }
     }
@@ -167,7 +135,7 @@ Result<Expr> Expr::parse_with_greater(TokenStream& stream) {
 
   stream.Next();
 
-  auto multi = std::make_unique<Expr>();
+  auto multi = std::make_unique<Expr>(ExprType::OPS);
 
   auto expr1_res = Expr::parse_with_plus(stream);
   if (expr1_res.isErr()) return Err(stream.loc(), "parse expr error");
@@ -193,7 +161,7 @@ Result<Expr> Expr::parse_with_plus(TokenStream& stream) {
     return expr0_res;
   }
 
-  auto multi = std::make_unique<Expr>();
+  auto multi = std::make_unique<Expr>(ExprType::OPS);
 
   multi->exprs.push_back(expr0_res.takeValue());
 
@@ -231,7 +199,7 @@ Result<Expr> Expr::parse_with_star(TokenStream& stream) {
     return expr0_res;
   }
 
-  auto multi = std::make_unique<Expr>();
+  auto multi = std::make_unique<Expr>(ExprType::OPS);
 
   multi->exprs.push_back(expr0_res.takeValue());
 
@@ -256,11 +224,25 @@ Result<Expr> Expr::parse_with_star(TokenStream& stream) {
 }
 
 Result<Expr> Expr::parse_atomic(TokenStream& stream) {
+  Result<Expr> fc = Expr::parse_funcall(stream);
+  if (fc.isOk()) {
+    return fc;
+  }
+
+  Result<Expr> tk = Expr::parse_token(stream);
+  if (tk.isOk()) {
+    return tk;
+  }
+
+  return Err(stream.loc(), "parse atomic error");
+}
+
+Result<Expr> Expr::parse_token(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
   auto v = stream.Peek();
   if (!v) {
-    return Err(stream.loc(), "parse atomic error");
+    return Err(stream.loc(), "parse tk error");
   }
 
   switch (v->type()) {
@@ -282,7 +264,39 @@ Result<Expr> Expr::parse_atomic(TokenStream& stream) {
     default:
       break;
   }
-  return Err(stream.loc(), "parse atomic error");
+  return Err(stream.loc(), "parse tk error");
+};
+
+Result<Expr> Expr::parse_funcall(TokenStream& stream) {
+  TokenStream::StateGuard guard(stream);
+
+  auto res = std::make_unique<Expr>(ExprType::FUNCALL);
+
+  Result<Expr> f = Expr::parse_token(stream);
+  if (f.isErr()) return Err(stream.loc(), "expect err");
+  res->exprs.emplace_back(f.takeValue());
+
+  EXPECT_TOKEN(stream, token::Type::LParent);
+
+  while (true) {
+    auto expr = Expr::parse(stream);
+    if (expr.isOk()) {
+      res->exprs.emplace_back(expr.takeValue());
+    } else {
+      break;
+    }
+
+    if (stream.Peek() && stream.Peek()->type() == token::Type::Comma) {
+      stream.Next();
+    } else {
+      break;
+    }
+  }
+
+  EXPECT_TOKEN(stream, token::Type::RParent);
+
+  guard.finish(res->start, res->end);
+  return Result<Expr>::ok(std::move(res));
 };
 
 Result<Function> Function::parse(TokenStream& stream) {

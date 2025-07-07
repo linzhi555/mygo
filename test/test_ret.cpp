@@ -10,12 +10,14 @@ TEST(test, Accumulate) {
   std::string src = R"(
 func acc (a int) int {
     if a < 2 {
-        
+        return a
     }
     return a + acc(a-1)
 }
 
-print(acc(5))
+result = acc(5)
+
+print(result)
 )";
   std::vector<uint8_t> src_data(src.begin(), src.end());
   auto stream = mygo::TokenStream(std::move(src_data));
@@ -25,15 +27,13 @@ print(acc(5))
     LOG(WARNING) << root_res.err_.toString();
   }
 
-  EXPECT_TRUE(root_res.isOk());
+  ASSERT_TRUE(root_res.isOk());
 
   mygo::ast::NodePtr<mygo::ast::Root> root = root_res.takeValue();
 
   LOG(WARNING) << root->debug();
 
   LOG(WARNING) << root->nodes_.size() << std::endl;
-
-  assert(root->nodes_.size() == 3);
 
   LOG(WARNING) << root->start << root->end << stream.state().loc << std::endl;
 

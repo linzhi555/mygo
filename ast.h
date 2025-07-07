@@ -129,19 +129,36 @@ class Result {
   Err&& takeErr() { return std::move(err_); }
 };
 
+enum class ExprType {
+  TOKEN,
+  OPS,
+  FUNCALL,
+};
+
 class Expr : public Node {
  public:
-  bool is_atomic;
+  ExprType etype_;
   token::Value v;
   std::vector<NodePtr<Expr>> exprs;
   std::vector<token::Type> ops;
 
   enum Type Type() override { return Type::Expr; };
+  Expr() = delete;
+  Expr(ExprType t) : etype_(t) {};
 
   std::string debug() override {
     std::string s;
-    if (is_atomic) {
+    if (etype_ == ExprType::TOKEN) {
       return v.debug();
+    }
+
+    if (etype_ == ExprType::FUNCALL) {
+      s += "(funcall: ";
+      for (auto& expr : exprs) {
+        s += expr->debug();
+      }
+      s += ")";
+      return s;
     }
 
     s += "(";
@@ -159,8 +176,7 @@ class Expr : public Node {
   }
 
   static NodePtr<Expr> MakeAtomic(token::Value v) {
-    NodePtr<Expr> e = std::make_unique<Expr>();
-    e->is_atomic = true;
+    NodePtr<Expr> e = std::make_unique<Expr>(ExprType::TOKEN);
     e->v = v;
     return e;
   }
@@ -170,6 +186,8 @@ class Expr : public Node {
   static Result<Expr> parse_with_plus(TokenStream& stream);
   static Result<Expr> parse_with_star(TokenStream& stream);
   static Result<Expr> parse_atomic(TokenStream& stream);
+  static Result<Expr> parse_token(TokenStream& stream);
+  static Result<Expr> parse_funcall(TokenStream& stream);
 };
 
 class Declaration : public Node {
@@ -192,24 +210,6 @@ class Declaration : public Node {
   }
 };
 
-class Funcall : public Node {
- public:
-  NodePtr<Expr> func;
-  std::vector<NodePtr<Expr>> arguments;
-
-  enum Type Type() override { return Type::Funcall; };
-
-  static Result<Funcall> parse(TokenStream& stream);
-
-  std::string debug() override {
-    std::string s;
-    s += "Funcall " + func->debug();
-    for (auto& arg : arguments) {
-      s += (std::string() + "\n" + "  " + arg->debug());
-    }
-    return s;
-  }
-};
 
 class Block : public Node {
  public:
