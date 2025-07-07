@@ -1,3 +1,4 @@
+#include <cassert>
 #include <utility>
 
 #include "ast.h"
@@ -92,8 +93,15 @@ t1(6.66, 88);
   LOG(WARNING) << "test succeed" << std::endl;
 }
 
-int main() {
-  set_debug_level(WARNING);
 
-  RUN_TEST;
+int main(int argc, char** argv) {
+  set_debug_level(WARNING);
+  if (argc > 2) {
+    std::string test_name = argv[1];
+    LOG(WARNING) << "runtest " << test_name << std::endl;
+
+    return 0;
+  }
+
+  RUN_ALL_TEST;
 }

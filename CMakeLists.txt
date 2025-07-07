@@ -14,6 +14,10 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+
+add_subdirectory(./third_party/googletest-1.17.0)
+include_directories(./third_party/googletest-1.17.0/googletest/include)
+
 set( LIB_SOURCES
         ./vm.cpp
         ./token.cpp
@@ -32,11 +36,14 @@ message(${LIB_SOURCES})
 add_executable(mygo mygo.cpp)
 target_link_libraries(mygo PRIVATE mygodev)
 
-add_executable(test_func test/test_func.cpp)
-target_link_libraries(test_func PRIVATE mygodev)
+#add_executable(test_func test/test_func.cpp)
+#target_link_libraries(test_func PRIVATE mygodev)
+#
+#add_executable(test_decl test/test_decl.cpp)
+#target_link_libraries(test_decl PRIVATE mygodev)
 
-add_executable(test_decl test/test_decl.cpp)
-target_link_libraries(test_decl PRIVATE mygodev)
+add_executable(test_ret test/test_ret.cpp)
+target_link_libraries(test_ret GTest::gtest_main mygodev)
 
 #add_executable(mygo ${PROJECT_SOURCES})
 #add_executable(test_all ${TEST_SOURCES})

@@ -23,5 +23,5 @@ TEST(1) {
 
 int main() {
   set_debug_level(INFO);
-  RUN_TEST;
+  RUN_ALL_TEST;
 }
