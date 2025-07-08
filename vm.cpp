@@ -246,7 +246,19 @@ void VM::run_block(ast::NodePtr<ast::Block>& block) {
       }
 
       case ast::Type::Return: {
+        ast::Return* ret = static_cast<ast::Return*>(node.get());
+        for (const auto& expr : ret->ret_exprs) {
+          std::optional<Value> v = std_eval(this, expr.get());
+          if (v) {
+            ret_ = v.value();
+          } else {
+            exit_ = ExitPanic;
+            return;
+          }
+        }
+
         this->exit_ = ExitNormal;
+
         break;
       }
 

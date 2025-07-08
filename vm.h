@@ -34,14 +34,15 @@ class VM {
     LOG(INFO) << "-----end start-----" << std::endl << std::endl;
   }
 
- private:
   using ExitCode = std::string_view;
   static constexpr ExitCode NoExit = "NoExit";
   static constexpr ExitCode ExitNormal = "ExitNormal";
   static constexpr ExitCode ExitPanic = "ExitPanic";
 
   ExitCode exit_ = NoExit;
+  Value ret_;
 
+ private:
   void run_block(ast::NodePtr<ast::Block>& block);
   void run_if(ast::If* node);
   void run_declaration(ast::Declaration* node);

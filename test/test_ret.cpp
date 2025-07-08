@@ -4,7 +4,22 @@
 #include "logging.h"
 #include "vm.h"
 
-TEST(test, helloworld) { EXPECT_EQ(1, 2); }
+TEST(ret, vm_ret) {
+  std::string src = R"(
+  return 11 * 11 - 1
+)";
+  std::vector<uint8_t> src_data(src.begin(), src.end());
+  auto stream = mygo::TokenStream(std::move(src_data));
+
+  auto root_res = mygo::ast::Root::parse(stream);
+  ASSERT_TRUE(root_res.isOk());
+  auto root = root_res.takeValue();
+  mygo::VM vm;
+  vm.run(root);
+
+  ASSERT_EQ(vm.exit_, mygo::VM::ExitNormal);
+  ASSERT_TRUE(vm.ret_.As<int>() == 120);
+}
 
 TEST(test, Accumulate) {
   std::string src = R"(

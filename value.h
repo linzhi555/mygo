@@ -10,6 +10,7 @@ namespace mygo {
 class Value {
  public:
   using Type_t = std::string_view;
+  static constexpr Type_t Nil = "nil";
   static constexpr Type_t Bool = "bool";
   static constexpr Type_t Str = "bool";
   static constexpr Type_t Int = "int";
@@ -17,7 +18,7 @@ class Value {
   static constexpr Type_t Struct = "struct";
   static constexpr Type_t Func = "func";
 
-  Type_t type;
+  Type_t type = Nil;
   bool is_builtin = true;
 
   std::variant<bool, std::string, int, float, ast::Function*> data;
