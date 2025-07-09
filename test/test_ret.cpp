@@ -30,9 +30,10 @@ func acc (a int) int {
     return a + acc(a-1)
 }
 
-result = acc(5)
+var result = acc(100)
 
-print(result)
+return result
+
 )";
   std::vector<uint8_t> src_data(src.begin(), src.end());
   auto stream = mygo::TokenStream(std::move(src_data));
@@ -46,13 +47,9 @@ print(result)
 
   mygo::ast::NodePtr<mygo::ast::Root> root = root_res.takeValue();
 
-  LOG(WARNING) << root->debug();
-
-  LOG(WARNING) << root->nodes_.size() << std::endl;
-
-  LOG(WARNING) << root->start << root->end << stream.state().loc << std::endl;
-
   mygo::VM vm;
   vm.run(root);
-  LOG(WARNING) << "test succeed" << std::endl;
+
+  ASSERT_EQ(vm.exit_, mygo::VM::ExitNormal);
+  ASSERT_EQ(vm.ret_.As<int>(), 5050);
 }

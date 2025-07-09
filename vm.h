@@ -41,6 +41,7 @@ class VM {
 
   ExitCode exit_ = NoExit;
   Value ret_;
+  std::optional<Value> std_eval(ast::Expr* expr);
 
  private:
   void run_block(ast::NodePtr<ast::Block>& block);

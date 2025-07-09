@@ -60,7 +60,17 @@ std::optional<Value> operator_equal(Value v1, Value v2) {
 
 }  // namespace
 
-std::optional<Value> std_eval(VM* vm, ast::Expr* expr) {
+std::optional<Value> VM::std_eval(ast::Expr* expr) {
+  if (expr->etype_ == ast::ExprType::FUNCALL) {
+    run_funcall(expr);
+    if (exit_ == ExitNormal) {
+      exit_ = NoExit;
+      return ret_;
+    }
+
+    return std::nullopt;
+  }
+
   if (expr->etype_ == ast::ExprType::TOKEN) {
     switch (expr->v.type()) {
       case token::Type::Int:
@@ -80,7 +90,7 @@ std::optional<Value> std_eval(VM* vm, ast::Expr* expr) {
 
       case token::Type::Symbol: {
         std::string key = expr->v.str();
-        auto v = vm->scope().Get(key);
+        auto v = scope().Get(key);
         if (v) {
           return v;
         } else {
@@ -101,8 +111,8 @@ std::optional<Value> std_eval(VM* vm, ast::Expr* expr) {
 
     assert(expr->exprs.size() == 2);
 
-    auto v1 = std_eval(vm, expr->exprs.at(0).get());
-    auto v2 = std_eval(vm, expr->exprs.at(1).get());
+    auto v1 = std_eval(expr->exprs.at(0).get());
+    auto v2 = std_eval(expr->exprs.at(1).get());
 
     if (!v1 || !v2) return std::nullopt;
     switch (t) {
@@ -118,14 +128,14 @@ std::optional<Value> std_eval(VM* vm, ast::Expr* expr) {
   } while (false);
 
   auto it = expr->exprs.begin();
-  auto v1 = std_eval(vm, it->get());
+  auto v1 = std_eval(it->get());
   if (v1->type != Value::Int) return std::nullopt;
   int res = std::get<int>(v1->data);
   it++;
 
   for (auto op_it = expr->ops.begin();
        it != expr->exprs.end() && op_it != expr->ops.end(); it++, op_it++) {
-    auto temp = std_eval(vm, it->get());
+    auto temp = std_eval(it->get());
 
     if (temp && temp.value().type == Value::Int) {
       int i_data = std::get<int>(temp->data);
@@ -153,7 +163,7 @@ std::optional<Value> std_eval(VM* vm, ast::Expr* expr) {
 
 void std_print(VM* vm, std::vector<ast::Expr*>& args) {
   for (ast::Expr* arg : args) {
-    auto v = std_eval(vm, arg);
+    auto v = vm->std_eval(arg);
     std::cout << (v.has_value() ? v->ToString() : "undefined") << " ";
   }
   std::cout << std::endl;
@@ -184,7 +194,7 @@ void VM::run_funcall(ast::Expr* node) {
 
     for (auto it = node->exprs.begin() + 1; it != node->exprs.end(); it++) {
       std::string arg_name = func->args.at(i).first;
-      std::optional<Value> a = std_eval(this, it->get());
+      std::optional<Value> a = std_eval(it->get());
       assert(a.has_value());
       newframe.Set(arg_name, a.value());
       i++;
@@ -199,11 +209,16 @@ void VM::run_funcall(ast::Expr* node) {
 }
 
 void VM::run_declaration(ast::Declaration* node) {
-  scope().Set(node->var_name, std_eval(this, node->expr.get()).value());
+  std::optional<Value> v = std_eval(node->expr.get());
+  if (v) {
+    scope().Set(node->var_name, v.value());
+  } else {
+    this->exit_ = ExitPanic;
+  }
 }
 
 void VM::run_if(ast::If* node) {
-  std::optional<Value> v = std_eval(this, node->expr.get());
+  std::optional<Value> v = std_eval(node->expr.get());
   if (v && v->type == Value::Bool && std::get<bool>(v->data)) {
     run_block(node->block);
   }
@@ -219,7 +234,7 @@ void VM::run_block(ast::NodePtr<ast::Block>& block) {
       case ast::Type::Expr: {
         ast::Expr* expr = static_cast<ast::Expr*>(node.get());
         if (expr->etype_ == ast::ExprType::FUNCALL) {
-          std_eval(this, expr);
+          std_eval(expr);
           if (exit_ == ExitNormal) {
             exit_ = NoExit;
           }
@@ -248,7 +263,7 @@ void VM::run_block(ast::NodePtr<ast::Block>& block) {
       case ast::Type::Return: {
         ast::Return* ret = static_cast<ast::Return*>(node.get());
         for (const auto& expr : ret->ret_exprs) {
-          std::optional<Value> v = std_eval(this, expr.get());
+          std::optional<Value> v = std_eval(expr.get());
           if (v) {
             ret_ = v.value();
           } else {

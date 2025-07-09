@@ -1,11 +1,15 @@
 func fib(a int) int {
 	if a < 2 {
-		print("a<2")
+		return a
 	}
-
-	if a < 1 {
-		print("a<1")
-	}
-	return
-
+	return fib(a-1) + fib(a-2)
 }
+
+print(fib(1))
+print(fib(2))
+print(fib(3))
+print(fib(4))
+print(fib(5))
+print(fib(6))
+print(fib(7))
+print(fib(8))
