@@ -21,7 +21,7 @@ print(result)
   auto stream = mygo::TokenStream(std::move(src_data));
 
   auto root_res = mygo::ast::Root::parse(stream);
-  EXPECT_FALSE(true) << root_res.takeValue()->debug();
+  EXPECT_FALSE(root_res.isErr());
 
   mygo::VM vm;
   mygo::ast::NodePtr<mygo::ast::Root> root = root_res.takeValue();

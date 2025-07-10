@@ -12,6 +12,7 @@ namespace mygo {
 namespace ast {
 enum class Type {
   Root,
+  Block,
   Expr,
   For,
   If,
@@ -76,6 +77,8 @@ class Err {
  public:
   Err() = default;
   Err(Loc loc, std::string_view msg) { err_stack_.emplace_back(loc, msg); }
+
+  // TODO: use static function rather to avodi function override
   Err(Err&& old, Loc loc, std::string_view msg) {
     err_stack_ = std::move(old.err_stack_);
     err_stack_.emplace_back(loc, msg);
@@ -107,7 +110,7 @@ class Result {
  public:
   static Result<T> ok(NodePtr<T>&& v) {
     Result<T> res;
-    res.value = std::move(v);
+    res.value_ = std::move(v);
     return res;
   };
 
@@ -121,11 +124,11 @@ class Result {
   //   return res;
   // };
 
-  NodePtr<T> value;
+  NodePtr<T> value_;
   Err err_;
-  bool isOk() { return value.get() != nullptr; };
+  bool isOk() { return value_.get() != nullptr; };
   bool isErr() { return !isOk(); }
-  NodePtr<T>&& takeValue() { return std::move(value); }
+  NodePtr<T>&& takeValue() { return std::move(value_); }
   Err&& takeErr() { return std::move(err_); }
 };
 
@@ -210,12 +213,11 @@ class Declaration : public Node {
   }
 };
 
-
 class Block : public Node {
  public:
   std::vector<std::unique_ptr<Node>> nodes_;
 
-  enum Type Type() override { return Type::Root; };
+  enum Type Type() override { return Type::Block; };
   std::string debug() override {
     std::string res;
     for (auto& node : nodes_) {
@@ -226,6 +228,16 @@ class Block : public Node {
   }
 
   static Result<Block> parse(TokenStream& stream);
+};
+
+class Root : public Node {
+ public:
+  NodePtr<Block> block_;
+
+  enum Type Type() override { return Type::Root; };
+  std::string debug() override { return block_->debug(); }
+
+  static Result<Root> parse(TokenStream& stream);
 };
 
 class Return : public Node {
@@ -244,8 +256,6 @@ class Return : public Node {
 
   static Result<Return> parse(TokenStream& stream);
 };
-
-using Root = Block;
 
 class Assignment : public Node {
  public:

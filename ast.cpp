@@ -95,6 +95,24 @@ Result<Block> Block::parse(TokenStream& stream) {
   return Result<Block>::ok(std::move(res));
 };
 
+Result<Root> Root::parse(TokenStream& stream) {
+  TokenStream::StateGuard guard(stream);
+  Result<Block> b = Block::parse(stream);
+
+  if (b.isErr()) {
+    return Err(b.takeErr(), stream.loc(), "parse root err");
+  }
+
+  NodePtr<Root> res = std::make_unique<Root>();
+  res->block_ = std::move(b.takeValue());
+
+  SKIP_TOKEN(stream, token::Type::Enl);
+  EXPECT_TOKEN(stream, token::Type::Enf);
+
+  guard.finish(res->start, res->end);
+  return Result<Root>::ok(std::move(res));
+}
+
 Result<Declaration> Declaration::parse(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
@@ -157,7 +175,7 @@ Result<Expr> Expr::parse_with_plus(TokenStream& stream) {
   }
   auto t = stream.Peek()->type();
   if (t != token::Type::Plus && t != token::Type::Sub) {
-    guard.finish(expr0_res.value->start, expr0_res.value->end);
+    guard.finish(expr0_res.value_->start, expr0_res.value_->end);
     return expr0_res;
   }
 
@@ -195,7 +213,7 @@ Result<Expr> Expr::parse_with_star(TokenStream& stream) {
 
   auto t = stream.Peek()->type();
   if (t != token::Type::Star && t != token::Type::Slash) {
-    guard.finish(expr0_res.value->start, expr0_res.value->end);
+    guard.finish(expr0_res.value_->start, expr0_res.value_->end);
     return expr0_res;
   }
 
@@ -365,6 +383,7 @@ Result<Function> Function::parse(TokenStream& stream) {
   return Result<Function>::ok(std::move(func_node));
 }
 
+//TODO: if need implement else and else if
 Result<If> If::parse(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 

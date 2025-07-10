@@ -285,5 +285,5 @@ void VM::run_block(ast::NodePtr<ast::Block>& block) {
   }
 }
 
-void VM::run(ast::NodePtr<ast::Root>& root) { run_block(root); }
+void VM::run(ast::NodePtr<ast::Root>& root) { run_block(root->block_); }
 }  // namespace mygo
