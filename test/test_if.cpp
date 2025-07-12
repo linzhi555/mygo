@@ -37,7 +37,7 @@ judge(81)
   auto stream = mygo::TokenStream(std::move(src_data));
 
   auto root_res = mygo::ast::Root::parse(stream);
-  EXPECT_FALSE(root_res.isErr());
+  EXPECT_FALSE(root_res.isErr()) << root_res.takeErr().toString();
 
   std::cout << "test start" << std::endl;
 

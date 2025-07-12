@@ -18,6 +18,7 @@ namespace token {
   T(Struct, "struct") \
   T(For, "for")       \
   T(If, "if")         \
+  T(Else, "else")     \
   T(Typedef, "type")  \
   T(Equal, "==")      \
   T(Less, "<")        \

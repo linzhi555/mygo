@@ -302,21 +302,33 @@ class Function : public Node {
 
 class If : public Node {
  public:
-  NodePtr<Expr> expr;
-  NodePtr<Block> block;
+  using Branch = std::pair<NodePtr<Expr>, NodePtr<Block>>;
+  std::vector<Branch> branches_;
+
+  std::optional<NodePtr<Block>> tail_else_;
 
   enum Type Type() override { return Type::If; };
   std::string debug() override {
     std::string res;
     res += "If:\n";
-    res += expr->debug();
-    res += "\n";
-    res += block->debug();
+
+    for (Branch& branch : branches_) {
+      auto& [expr, block] = branch;
+      res += expr->debug();
+      res += "\n";
+      res += block->debug();
+    }
+
+    if (tail_else_) {
+      res += tail_else_.value()->debug();
+    }
+
     return res;
   };
   static Result<If> parse(TokenStream& stream);
 };
 
+// TODO:need implement for
 class For : public Node {
   std::vector<NodePtr<Expr>> exprs;
   NodePtr<Block> block;

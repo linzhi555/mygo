@@ -383,29 +383,60 @@ Result<Function> Function::parse(TokenStream& stream) {
   return Result<Function>::ok(std::move(func_node));
 }
 
-//TODO: if need implement else and else if
 Result<If> If::parse(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
-  EXPECT_TOKEN(stream, token::Type::If);
-  Result<Expr> expr = Expr::parse(stream);
-  if (expr.isErr()) return Err(stream.loc(), "parse expr error");
+  NodePtr<If> if_node;
 
-  EXPECT_TOKEN(stream, token::Type::LBrace);
+  for (int i = 0;; i++) {
+    assert(i < 1000);
 
-  SKIP_TOKEN(stream, token::Type::Enl);
-  Result<Block> block_res = Block::parse(stream);
-  if (block_res.isErr())
-    return Err(
-        block_res.takeErr(), stream.loc(),
-        std::string("parse if error at") + stream.state().loc.ToString());
+    bool in_tail_else = false;
+    if (i == 0) {
+      EXPECT_TOKEN(stream, token::Type::If);
+      if_node = std::make_unique<If>();
+    } else {
+      if (stream.Peek() && stream.Peek()->type() == token::Type::If) {
+        stream.Next();
+      } else {
+        in_tail_else = true;
+      }
+    }
 
-  EXPECT_TOKEN(stream, token::Type::RBrace);
+    Result<Expr> expr;
+    if (!in_tail_else) {
+      expr = Expr::parse(stream);
+      if (expr.isErr()) return Err(stream.loc(), "parse expr error");
+    } else {
+    }
 
-  NodePtr<If> if_node = std::make_unique<If>();
+    EXPECT_TOKEN(stream, token::Type::LBrace);
 
-  if_node->expr = std::move(expr.takeValue());
-  if_node->block = std::move(block_res.takeValue());
+    SKIP_TOKEN(stream, token::Type::Enl);
+    Result<Block> block_res = Block::parse(stream);
+    if (block_res.isErr())
+      return Err(
+          block_res.takeErr(), stream.loc(),
+          std::string("parse if error at") + stream.state().loc.ToString());
+
+    EXPECT_TOKEN(stream, token::Type::RBrace);
+
+    if (!in_tail_else) {
+      if_node->branches_.push_back(
+          {std::move(expr.takeValue()), block_res.takeValue()});
+    } else {
+      if_node->tail_else_ = block_res.takeValue();
+      break;
+    }
+
+    std::optional<token::Value> t = stream.Peek();
+    if (t && t.value().type() == token::Type::Else) {
+      stream.Next();
+      continue;
+    }
+
+    break;
+  }
 
   guard.finish(if_node->start, if_node->end);
   return Result<If>::ok(std::move(if_node));

@@ -218,9 +218,16 @@ void VM::run_declaration(ast::Declaration* node) {
 }
 
 void VM::run_if(ast::If* node) {
-  std::optional<Value> v = std_eval(node->expr.get());
-  if (v && v->type == Value::Bool && std::get<bool>(v->data)) {
-    run_block(node->block);
+  for (ast::If::Branch& branch : node->branches_) {
+    auto& [expr, block] = branch;
+    std::optional<Value> v = std_eval(expr.get());
+    if (v && v->type == Value::Bool && std::get<bool>(v->data)) {
+      run_block(block);
+      return;
+    }
+  }
+  if (node->tail_else_) {
+    run_block(node->tail_else_.value());
   }
 }
 
