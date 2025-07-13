@@ -71,6 +71,7 @@ class Node {
 
   virtual enum Type Type() = 0;
   virtual std::string debug() = 0;
+  virtual ~Node() {};
 };
 
 class Err {
@@ -140,13 +141,15 @@ enum class ExprType {
 
 class Expr : public Node {
  public:
+  Expr() = delete;
+  ~Expr() override = default;
+
   ExprType etype_;
   token::Value v;
   std::vector<NodePtr<Expr>> exprs;
   std::vector<token::Type> ops;
 
   enum Type Type() override { return Type::Expr; };
-  Expr() = delete;
   Expr(ExprType t) : etype_(t) {};
 
   std::string debug() override {
@@ -195,6 +198,9 @@ class Expr : public Node {
 
 class Declaration : public Node {
  public:
+  Declaration() = default;
+  ~Declaration() override = default;
+
   bool is_const;
   std::string var_name;
   NodePtr<Expr> expr;
@@ -215,6 +221,8 @@ class Declaration : public Node {
 
 class Block : public Node {
  public:
+  Block() = default;
+  ~Block() override = default;
   std::vector<std::unique_ptr<Node>> nodes_;
 
   enum Type Type() override { return Type::Block; };
@@ -232,6 +240,9 @@ class Block : public Node {
 
 class Root : public Node {
  public:
+  Root() = default;
+  ~Root() override = default;
+
   NodePtr<Block> block_;
 
   enum Type Type() override { return Type::Root; };
@@ -242,6 +253,8 @@ class Root : public Node {
 
 class Return : public Node {
  public:
+  Return() = default;
+  ~Return() override = default;
   enum Type Type() override { return Type::Return; };
   std::vector<NodePtr<Expr>> ret_exprs;
   std::string debug() override {
@@ -259,6 +272,9 @@ class Return : public Node {
 
 class Assignment : public Node {
  public:
+  Assignment() = default;
+  ~Assignment() override = default;
+
   std::string var_name;
   NodePtr<Expr> expr;
 
@@ -276,6 +292,9 @@ class Assignment : public Node {
 
 class Function : public Node {
  public:
+  Function() = default;
+  ~Function() override = default;
+
   std::string func_name;
   std::vector<std::pair<std::string, std::string>> args;
   std::vector<std::string> returns;
@@ -302,6 +321,9 @@ class Function : public Node {
 
 class If : public Node {
  public:
+  If() = default;
+  ~If() override = default;
+
   using Branch = std::pair<NodePtr<Expr>, NodePtr<Block>>;
   std::vector<Branch> branches_;
 
@@ -330,6 +352,10 @@ class If : public Node {
 
 // TODO:need implement for
 class For : public Node {
+ public:
+  For() = default;
+  ~For() override = default;
+
   std::vector<NodePtr<Expr>> exprs;
   NodePtr<Block> block;
   enum Type Type() override { return Type::For; };

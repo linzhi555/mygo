@@ -1,6 +1,8 @@
 #include "ast.h"
 
 #include <cassert>
+#include <concepts>
+#include <functional>
 #include <memory>
 #include <string>
 #include <utility>
@@ -8,7 +10,28 @@
 #include "logging.h"
 
 namespace mygo {
+
 namespace ast {
+
+namespace {
+template <class T, class TokenStream>
+concept AstNode = requires(TokenStream& stream) {
+  { T::parse(stream) } -> std::same_as<Result<T>>;
+};
+
+template <class T>
+  requires AstNode<T, TokenStream>
+Result<Node> NodeParseFunc(TokenStream& stream) {
+  Result<T> res = T::parse(stream);
+  if (res.isErr()) {
+    return res.takeErr();
+  }
+
+  NodePtr<Node> node = res.takeValue();
+
+  return Result<Node>::ok(std::move(node));
+}
+}  // namespace
 
 Result<Return> Return::parse(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
@@ -33,59 +56,31 @@ Result<Block> Block::parse(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
 
   auto res = std::make_unique<Block>();
-  for (int i = 0; i < 100000; i++) {
+
+  using ParseFunc = std::function<Result<Node>(TokenStream & stream)>;
+  std::vector<ParseFunc> parse_funcs = {
+      NodeParseFunc<Declaration>,  //
+      NodeParseFunc<Expr>,         //
+      NodeParseFunc<If>,           //
+      NodeParseFunc<Function>,     //
+      NodeParseFunc<Return>,       //
+  };
+
+  for (int i = 0;; i++) {
+    assert(i < 100000);
     SKIP_TOKEN(stream, token::Type::Enl);
-    {
-      Result<Declaration> decl = Declaration::parse(stream);
-      if (decl.isOk()) {
-        res->nodes_.push_back(decl.takeValue());
-        continue;
-      }
-    }
-
-    {
-      Result<Expr> expr = Expr::parse(stream);
-      if (expr.isOk()) {
-        res->nodes_.push_back(expr.takeValue());
-        continue;
-      }
-    }
-
-    {
-      Result<If> if_node = If::parse(stream);
-      if (if_node.isOk()) {
-        res->nodes_.push_back(if_node.takeValue());
-        continue;
-      }
-
-      Err e = if_node.takeErr();
-      if (e.top().first != stream.loc()) {
-        return Err(if_node.takeErr(), stream.loc(),
-                   std::string("parse if error"));
-      }
-    }
-
-    {
-      Result<Function> func_node = Function::parse(stream);
-      if (func_node.isOk()) {
-        res->nodes_.push_back(func_node.takeValue());
-        continue;
-      }
-      Err e = func_node.takeErr();
-      if (e.top().first != stream.loc())
-        return Err(std::move(e), stream.loc(), std::string("parse func error"));
-    }
-
-    {
-      Result<Return> node = Return::parse(stream);
+    bool new_node_pushed = false;
+    for (ParseFunc& f : parse_funcs) {
+      Result<Node> node = f(stream);
       if (node.isOk()) {
-        res->nodes_.push_back(node.takeValue());
-        continue;
+        res->nodes_.push_back(std::move(node.takeValue()));
+        new_node_pushed = true;
+        break;
       }
-      Err e = node.takeErr();
-      if (e.top().first != stream.loc())
-        return Err(std::move(e), stream.loc(),
-                   std::string("parse return error"));
+    }
+
+    if (new_node_pushed) {
+      continue;
     }
 
     break;
