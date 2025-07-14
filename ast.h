@@ -356,19 +356,33 @@ class For : public Node {
   For() = default;
   ~For() override = default;
 
-  std::vector<NodePtr<Expr>> exprs;
-  NodePtr<Block> block;
+  std::optional<Expr> init_stmt_;
+  std::optional<Expr> finish_cond_;
+  std::optional<Expr> step_stmp_;
+
+  NodePtr<Block> block_;
   enum Type Type() override { return Type::For; };
   std::string debug() override {
     std::string res;
     res += "For:\n";
-    for (const auto& expr : exprs) {
-      res += expr->debug();
-      res += "\n";
+    res += "init_stmt\n";
+    if (init_stmt_) {
+      res += init_stmt_.value().debug();
     }
-    res += block->debug();
+    res += "finish_cond\n";
+    if (finish_cond_) {
+      res += finish_cond_.value().debug();
+    }
+    res += "step_stmp_\n";
+    if (step_stmp_) {
+      res += step_stmp_.value().debug();
+    }
+
+    res += block_->debug();
     return res;
   };
+
+  static Result<For> parse(TokenStream& stream);
 };
 
 }  // namespace ast

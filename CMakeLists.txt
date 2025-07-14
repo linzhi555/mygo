@@ -51,5 +51,8 @@ target_link_libraries(test_expr GTest::gtest_main mygodev)
 add_executable(test_if test/test_if.cpp)
 target_link_libraries(test_if GTest::gtest_main mygodev)
 
+add_executable(test_for test/test_for.cpp)
+target_link_libraries(test_for GTest::gtest_main mygodev)
+
 #add_executable(mygo ${PROJECT_SOURCES})
 #add_executable(test_all ${TEST_SOURCES})

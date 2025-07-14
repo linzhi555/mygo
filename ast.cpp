@@ -64,6 +64,7 @@ Result<Block> Block::parse(TokenStream& stream) {
       NodeParseFunc<If>,           //
       NodeParseFunc<Function>,     //
       NodeParseFunc<Return>,       //
+      NodeParseFunc<For>,          //
   };
 
   for (int i = 0;; i++) {
@@ -435,6 +436,28 @@ Result<If> If::parse(TokenStream& stream) {
 
   guard.finish(if_node->start, if_node->end);
   return Result<If>::ok(std::move(if_node));
+}
+
+Result<For> For::parse(TokenStream& stream) {
+  TokenStream::StateGuard guard(stream);
+  NodePtr<For> for_node = std::make_unique<For>();
+
+  EXPECT_TOKEN(stream, token::Type::For);
+  EXPECT_TOKEN(stream, token::Type::LBrace);
+
+  SKIP_TOKEN(stream, token::Type::Enl);
+  Result<Block> block_res = Block::parse(stream);
+  if (block_res.isErr())
+    return Err(
+        block_res.takeErr(), stream.loc(),
+        std::string("parse for error at") + stream.state().loc.ToString());
+
+  EXPECT_TOKEN(stream, token::Type::RBrace);
+
+  for_node->block_ = std::move(block_res.takeValue());
+
+  guard.finish(for_node->start, for_node->end);
+  return Result<For>::ok(std::move(for_node));
 }
 
 }  // namespace ast
