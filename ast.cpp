@@ -443,6 +443,13 @@ Result<For> For::parse(TokenStream& stream) {
   NodePtr<For> for_node = std::make_unique<For>();
 
   EXPECT_TOKEN(stream, token::Type::For);
+
+  Result<Expr> expr_res = Expr::parse(stream);
+  if (expr_res.isOk()) {
+    NodePtr<Expr> expr = std::move(expr_res.takeValue());
+    for_node->finish_cond_ = std::move(expr);
+  }
+
   EXPECT_TOKEN(stream, token::Type::LBrace);
 
   SKIP_TOKEN(stream, token::Type::Enl);

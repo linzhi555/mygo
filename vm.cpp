@@ -231,6 +231,20 @@ void VM::run_if(ast::If* node) {
   }
 }
 
+void VM::run_for(ast::For* node) {
+  while (true) {
+    if (node->finish_cond_) {
+      std::optional<Value> v = std_eval(node->finish_cond_.value().get());
+      if (!v.has_value() || v->type != Value::Bool ||
+          !std::get<bool>(v->data)) {
+        break;
+      }
+    }
+
+    run_block(node->block_);
+  }
+}
+
 void VM::run_block(ast::NodePtr<ast::Block>& block) {
   for (const std::unique_ptr<ast::Node>& node : block->nodes_) {
     if (this->exit_ == ExitNormal || this->exit_ == ExitPanic) {
@@ -284,7 +298,14 @@ void VM::run_block(ast::NodePtr<ast::Block>& block) {
         break;
       }
 
+      case ast::Type::For: {
+        ast::For* for_node = static_cast<ast::For*>(node.get());
+        run_for(for_node);
+        break;
+      }
+
       default: {
+        assert("should not reach here" && false);
         this->exit_ = ExitPanic;
         break;
       }

@@ -8,10 +8,9 @@ TEST(IfFor, test1) {
     var a = 11;
     print(a)
 
-    for {
-        var a = 0;
+    for a > 1 {
+        var a = a - 1
         print(a)
-
     }
 
 

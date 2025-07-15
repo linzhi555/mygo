@@ -46,6 +46,7 @@ class VM {
  private:
   void run_block(ast::NodePtr<ast::Block>& block);
   void run_if(ast::If* node);
+  void run_for(ast::For* node);
   void run_declaration(ast::Declaration* node);
   void run_funcall(ast::Expr* node);
 

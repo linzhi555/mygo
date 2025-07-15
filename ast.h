@@ -356,9 +356,9 @@ class For : public Node {
   For() = default;
   ~For() override = default;
 
-  std::optional<Expr> init_stmt_;
-  std::optional<Expr> finish_cond_;
-  std::optional<Expr> step_stmp_;
+  std::optional<NodePtr<Expr>> init_stmt_;
+  std::optional<NodePtr<Expr>> finish_cond_;
+  std::optional<NodePtr<Expr>> step_stmp_;
 
   NodePtr<Block> block_;
   enum Type Type() override { return Type::For; };
@@ -367,15 +367,15 @@ class For : public Node {
     res += "For:\n";
     res += "init_stmt\n";
     if (init_stmt_) {
-      res += init_stmt_.value().debug();
+      res += init_stmt_.value()->debug();
     }
     res += "finish_cond\n";
     if (finish_cond_) {
-      res += finish_cond_.value().debug();
+      res += finish_cond_.value()->debug();
     }
     res += "step_stmp_\n";
     if (step_stmp_) {
-      res += step_stmp_.value().debug();
+      res += step_stmp_.value()->debug();
     }
 
     res += block_->debug();
