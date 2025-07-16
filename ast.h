@@ -24,43 +24,6 @@ enum class Type {
   Return,
 };
 
-#define SKIP_TOKEN(S, T)                             \
-  while (S.Peek() && S.Peek().value().type() == T) { \
-    S.Next();                                        \
-  }
-
-#define SKIP_TOKEN_ONCE(S, T)                     \
-  if (S.Peek() && S.Peek().value().type() == T) { \
-    S.Next();                                     \
-  }
-
-#define EXPECT_TOKEN(S, T)                                              \
-  if (!S.Peek())                                                        \
-    return Err(S.loc(), std::string("expect token but get null") + #T); \
-  if (S.Peek().value().type() != T) {                                   \
-    return Err(S.loc(), std::string("expect token ") + #T);             \
-  } else {                                                              \
-    S.Next();                                                           \
-  }
-
-#define EXPECT_TOKEN_ERR(S, T, ERR)        \
-  if (!S.Peek()) return Err(S.loc(), ERR); \
-  if (S.Peek().value().type() != T) {      \
-    return Err(S.loc(), ERR);              \
-  } else {                                 \
-    S.Next();                              \
-  }
-
-#define EXPECT_GET_TOKEN(S, T, ERR, RES)                                \
-  if (!S.Peek())                                                        \
-    return Err(S.loc(), std::string("expect token but get null") + #T); \
-  if (S.Peek().value().type() != T) {                                   \
-    return Err(S.loc(), std::string("expect token ") + #T);             \
-  } else {                                                              \
-    RES = S.Peek().value();                                             \
-    S.Next();                                                           \
-  }
-
 template <typename T>
 using NodePtr = std::unique_ptr<T>;
 
@@ -219,6 +182,26 @@ class Declaration : public Node {
   }
 };
 
+class Assignment : public Node {
+ public:
+  Assignment() = default;
+  ~Assignment() override = default;
+
+  std::string var_name;
+  NodePtr<Expr> expr;
+
+  enum Type Type() override { return Type::Assignment; };
+  std::string debug() override {
+    std::string s;
+    s += "Assignment:";
+    s += var_name;
+    s += " ";
+    s += expr->debug();
+    return s;
+  };
+  static Result<Assignment> parse(TokenStream& stream);
+};
+
 class Block : public Node {
  public:
   Block() = default;
@@ -268,26 +251,6 @@ class Return : public Node {
   }
 
   static Result<Return> parse(TokenStream& stream);
-};
-
-class Assignment : public Node {
- public:
-  Assignment() = default;
-  ~Assignment() override = default;
-
-  std::string var_name;
-  NodePtr<Expr> expr;
-
-  enum Type Type() override { return Type::Assignment; };
-  std::string debug() override {
-    std::string s;
-    s += "Assignment:";
-    s += var_name;
-    s += " ";
-    s += expr->debug();
-    return s;
-  };
-  static Result<Assignment> parse(TokenStream& stream);
 };
 
 class Function : public Node {
@@ -356,26 +319,29 @@ class For : public Node {
   For() = default;
   ~For() override = default;
 
-  std::optional<NodePtr<Expr>> init_stmt_;
+  std::optional<NodePtr<Declaration>> init_stmt_;
   std::optional<NodePtr<Expr>> finish_cond_;
-  std::optional<NodePtr<Expr>> step_stmp_;
+  std::optional<NodePtr<Assignment>> step_stmp_;
 
   NodePtr<Block> block_;
   enum Type Type() override { return Type::For; };
   std::string debug() override {
     std::string res;
     res += "For:\n";
-    res += "init_stmt\n";
+    res += "init_stmt ";
     if (init_stmt_) {
       res += init_stmt_.value()->debug();
+      res += "\n";
     }
-    res += "finish_cond\n";
+    res += "finish_cond ";
     if (finish_cond_) {
       res += finish_cond_.value()->debug();
+      res += "\n";
     }
-    res += "step_stmp_\n";
+    res += "step_stmp_ ";
     if (step_stmp_) {
       res += step_stmp_.value()->debug();
+      res += "\n";
     }
 
     res += block_->debug();

@@ -217,6 +217,20 @@ void VM::run_declaration(ast::Declaration* node) {
   }
 }
 
+void VM::run_assignment(ast::Assignment* node) {
+  if (scope().Get(node->var_name) == std::nullopt) {
+    this->exit_ = ExitPanic;
+    return;
+  }
+
+  std::optional<Value> v = std_eval(node->expr.get());
+  if (v) {
+    scope().Set(node->var_name, v.value());
+  } else {
+    this->exit_ = ExitPanic;
+  }
+}
+
 void VM::run_if(ast::If* node) {
   for (ast::If::Branch& branch : node->branches_) {
     auto& [expr, block] = branch;
@@ -232,7 +246,15 @@ void VM::run_if(ast::If* node) {
 }
 
 void VM::run_for(ast::For* node) {
+  if (node->init_stmt_) {
+    run_declaration(node->init_stmt_->get());
+  }
+
   while (true) {
+    if (this->exit_ == ExitNormal || this->exit_ == ExitPanic) {
+      return;
+    }
+
     if (node->finish_cond_) {
       std::optional<Value> v = std_eval(node->finish_cond_.value().get());
       if (!v.has_value() || v->type != Value::Bool ||
@@ -240,8 +262,11 @@ void VM::run_for(ast::For* node) {
         break;
       }
     }
-
     run_block(node->block_);
+
+    if (node->step_stmp_) {
+      run_assignment(node->step_stmp_->get());
+    }
   }
 }
 
@@ -266,6 +291,12 @@ void VM::run_block(ast::NodePtr<ast::Block>& block) {
       case ast::Type::Declaration: {
         ast::Declaration* decl = static_cast<ast::Declaration*>(node.get());
         run_declaration(decl);
+        break;
+      }
+
+      case ast::Type::Assignment: {
+        ast::Assignment* asgn = static_cast<ast::Assignment*>(node.get());
+        run_assignment(asgn);
         break;
       }
 

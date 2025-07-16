@@ -48,6 +48,7 @@ class VM {
   void run_if(ast::If* node);
   void run_for(ast::For* node);
   void run_declaration(ast::Declaration* node);
+  void run_assignment(ast::Assignment* node);
   void run_funcall(ast::Expr* node);
 
   // global storage area

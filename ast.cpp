@@ -9,8 +9,44 @@
 
 #include "logging.h"
 
-namespace mygo {
+#define SKIP_TOKEN(S, T)                             \
+  while (S.Peek() && S.Peek().value().type() == T) { \
+    S.Next();                                        \
+  }
 
+#define SKIP_TOKEN_ONCE(S, T)                     \
+  if (S.Peek() && S.Peek().value().type() == T) { \
+    S.Next();                                     \
+  }
+
+#define EXPECT_TOKEN(S, T)                                              \
+  if (!S.Peek())                                                        \
+    return Err(S.loc(), std::string("expect token but get null") + #T); \
+  if (S.Peek().value().type() != T) {                                   \
+    return Err(S.loc(), std::string("expect token ") + #T);             \
+  } else {                                                              \
+    S.Next();                                                           \
+  }
+
+#define EXPECT_TOKEN_ERR(S, T, ERR)        \
+  if (!S.Peek()) return Err(S.loc(), ERR); \
+  if (S.Peek().value().type() != T) {      \
+    return Err(S.loc(), ERR);              \
+  } else {                                 \
+    S.Next();                              \
+  }
+
+#define EXPECT_GET_TOKEN(S, T, ERR, RES)                                \
+  if (!S.Peek())                                                        \
+    return Err(S.loc(), std::string("expect token but get null") + #T); \
+  if (S.Peek().value().type() != T) {                                   \
+    return Err(S.loc(), std::string("expect token ") + #T);             \
+  } else {                                                              \
+    RES = S.Peek().value();                                             \
+    S.Next();                                                           \
+  }
+
+namespace mygo {
 namespace ast {
 
 namespace {
@@ -60,6 +96,7 @@ Result<Block> Block::parse(TokenStream& stream) {
   using ParseFunc = std::function<Result<Node>(TokenStream & stream)>;
   std::vector<ParseFunc> parse_funcs = {
       NodeParseFunc<Declaration>,  //
+      NodeParseFunc<Assignment>,   //
       NodeParseFunc<Expr>,         //
       NodeParseFunc<If>,           //
       NodeParseFunc<Function>,     //
@@ -127,6 +164,25 @@ Result<Declaration> Declaration::parse(TokenStream& stream) {
 
   guard.finish(res->start, res->end);
   return Result<Declaration>::ok(std::move(res));
+}
+
+Result<Assignment> Assignment::parse(TokenStream& stream) {
+  TokenStream::StateGuard guard(stream);
+
+  auto res = std::make_unique<Assignment>();
+
+  token::Value v;
+  EXPECT_GET_TOKEN(stream, token::Type::Symbol, "expect symbol", v);
+  res->var_name = v.str();
+
+  EXPECT_TOKEN(stream, token::Type::Assign)
+
+  Result<Expr> e = Expr::parse(stream);
+  if (e.isErr()) return (Err(e.takeErr(), stream.loc(), "parse Expr error"));
+  res->expr = e.takeValue();
+
+  guard.finish(res->start, res->end);
+  return Result<Assignment>::ok(std::move(res));
 }
 
 Result<Expr> Expr::parse(TokenStream& stream) {
@@ -444,10 +500,30 @@ Result<For> For::parse(TokenStream& stream) {
 
   EXPECT_TOKEN(stream, token::Type::For);
 
+  Result<Declaration> decl_res = Declaration::parse(stream);
+  if (decl_res.isOk()) {
+    NodePtr<Declaration> decl = std::move(decl_res.takeValue());
+    for_node->init_stmt_ = std::move(decl);
+  }
+
+  std::cout << stream.Peek()->debug() << std::endl;
+  // EXPECT_TOKEN(stream, token::Type::Semicolon);
+  EXPECT_TOKEN(stream, token::Type::Comma);
+  // SKIP_TOKEN(stream, token::Type::Enl);
+
   Result<Expr> expr_res = Expr::parse(stream);
   if (expr_res.isOk()) {
     NodePtr<Expr> expr = std::move(expr_res.takeValue());
     for_node->finish_cond_ = std::move(expr);
+  }
+
+  // SKIP_TOKEN(stream, token::Type::Enl);
+  EXPECT_TOKEN(stream, token::Type::Comma);
+
+  Result<Assignment> asgn_res = Assignment::parse(stream);
+  if (asgn_res.isOk()) {
+    NodePtr<Assignment> asgn = std::move(asgn_res.takeValue());
+    for_node->step_stmp_ = std::move(asgn);
   }
 
   EXPECT_TOKEN(stream, token::Type::LBrace);
