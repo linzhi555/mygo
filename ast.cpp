@@ -507,8 +507,8 @@ Result<For> For::parse(TokenStream& stream) {
   }
 
   std::cout << stream.Peek()->debug() << std::endl;
-  // EXPECT_TOKEN(stream, token::Type::Semicolon);
-  EXPECT_TOKEN(stream, token::Type::Comma);
+  EXPECT_TOKEN(stream, token::Type::Semicolon);
+  //EXPECT_TOKEN(stream, token::Type::Comma);
   // SKIP_TOKEN(stream, token::Type::Enl);
 
   Result<Expr> expr_res = Expr::parse(stream);
@@ -518,7 +518,7 @@ Result<For> For::parse(TokenStream& stream) {
   }
 
   // SKIP_TOKEN(stream, token::Type::Enl);
-  EXPECT_TOKEN(stream, token::Type::Comma);
+  EXPECT_TOKEN(stream, token::Type::Semicolon);
 
   Result<Assignment> asgn_res = Assignment::parse(stream);
   if (asgn_res.isOk()) {

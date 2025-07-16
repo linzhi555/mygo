@@ -168,10 +168,6 @@ std::optional<Value> endl_from_chars(CharPtr start, CharPtr end) {
     return Value(token::Type::Enl, 1);
   }
 
-  if (*start == ';') {
-    return Value(token::Type::Enl, 1);
-  }
-
   return std::nullopt;
 }
 

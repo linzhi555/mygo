@@ -5,11 +5,12 @@
 
 TEST(IfFor, test1) {
   std::string src = R"(
-    var a = 11;
+    var a = 11
+
     print(a)
 
 
-for var i = 10, i > 0,  i = i - 1 {
+for var i = 10; i > 0;  i = i - 1 {
     print(i)
 }
 
