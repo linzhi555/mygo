@@ -313,7 +313,7 @@ class If : public Node {
   static Result<If> parse(TokenStream& stream);
 };
 
-// TODO:need implement for
+// TODO:need implement one statment and not state for
 class For : public Node {
  public:
   For() = default;
@@ -350,6 +350,9 @@ class For : public Node {
 
   static Result<For> parse(TokenStream& stream);
 };
+
+// TODO: need implement struct node
+class Struct : public Node {};
 
 }  // namespace ast
 }  // namespace mygo

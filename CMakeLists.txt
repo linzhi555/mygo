@@ -18,13 +18,16 @@ endif()
 add_subdirectory(./third_party/googletest-1.17.0)
 include_directories(./third_party/googletest-1.17.0/googletest/include)
 
+
+include_directories(./src)
+
 set( LIB_SOURCES
-        ./vm.cpp
-        ./token.cpp
-        ./token_stream.cpp
-        ./logging.cpp
-        ./ast.cpp
-        ./frame.cpp
+        ./src/vm.cpp
+        ./src/token.cpp
+        ./src/token_stream.cpp
+        ./src/logging.cpp
+        ./src/ast.cpp
+        ./src/frame.cpp
 )
 
 add_library(mygodev STATIC ${LIB_SOURCES})
@@ -33,7 +36,7 @@ add_library(mygodev STATIC ${LIB_SOURCES})
 set(CMAKE_BUILD_TYPE Debug)
 message(${LIB_SOURCES})
 
-add_executable(mygo mygo.cpp)
+add_executable(mygo ./src/mygo.cpp)
 target_link_libraries(mygo PRIVATE mygodev)
 
 #add_executable(test_func test/test_func.cpp)

@@ -126,7 +126,8 @@ std::optional<Value> VM::std_eval(ast::Expr* expr) {
         assert("should not reach here" == nullptr);
     }
   } while (false);
-
+    
+  // TODO: need implement for float
   auto it = expr->exprs.begin();
   auto v1 = std_eval(it->get());
   if (v1->type != Value::Int) return std::nullopt;
