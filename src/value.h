@@ -49,23 +49,8 @@ class Value {
     return std::get<T>(data);
   }
 
-  std::string ToString() {
-    if (type == Int) return std::to_string(std::get<int>(data));
-
-    if (type == Str) return std::get<std::string>(data);
-
-    if (type == Bool)
-      return std::get<bool>(data) ? std::string("true") : std::string("false");
-
-    if (type == Float) return std::to_string(std::get<float>(data));
-
-    if (type == Func)
-      return std::string("func(") + As<ast::Function*>()->func_name + ")";
-
-    if (type == Struct) return std::string("Object");
-
-    return std::string();
-  }
+  std::string ToString();
+  std::optional<Value> Operator(token::Type t, Value& other);
 };
 
 }  // namespace mygo

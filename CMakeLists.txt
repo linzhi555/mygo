@@ -27,6 +27,7 @@ set( LIB_SOURCES
         ./src/token_stream.cpp
         ./src/logging.cpp
         ./src/ast.cpp
+        ./src/value.cpp
         ./src/frame.cpp
 )
 
