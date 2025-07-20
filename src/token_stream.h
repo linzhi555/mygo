@@ -14,6 +14,7 @@ class TokenStream {
   struct State {
     int pos = 0;
     Loc loc;
+    token::Value last_tk = token::Value(token::Type::Enf, 0);
   };
 
   Loc loc() { return state_.loc; }
@@ -43,6 +44,18 @@ class TokenStream {
       }
     }
   };
+
+  std::string debug() {
+    StateGuard guard(*this);
+    std::string res;
+    while (true) {
+      auto tk = Peek();
+      if (!tk.has_value() || tk->type() == token::Type::Enf) break;
+      res += Peek()->debug();
+      Next();
+    }
+    return res;
+  }
 
   State state() { return state_; };
   void Load(State s) { state_ = s; };

@@ -22,6 +22,21 @@ std::string Value::ToString() {
   return std::string();
 }
 
+std::optional<Value> Value::Operator(token::Type tk) {
+  auto tt = this->type;
+  if (tk == token::Type::Sub) {
+    if (tt == Int) {
+      return Make<int>(-1 * this->As<int>());
+    }
+
+    if (tt == Float) {
+      return Make<float>(-1 * this->As<float>());
+    }
+  }
+
+  return std::nullopt;
+}
+
 #define DO_BINARAY_OP(TK_TYPE, OP)                                \
   if (tk == TK_TYPE) {                                            \
     if (tt == Int && ot == Int) {                                 \

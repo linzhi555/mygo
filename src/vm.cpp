@@ -127,7 +127,6 @@ std::optional<Value> VM::std_eval(ast::Expr* expr) {
     }
   } while (false);
 
-  // TODO: need implement for float
   auto expr_it = expr->exprs.begin();
   std::optional<Value> v1 = std_eval(expr_it->get());
 
@@ -138,6 +137,11 @@ std::optional<Value> VM::std_eval(ast::Expr* expr) {
   auto op_it = expr->ops.begin();
 
   Value res = v1.value();
+
+  // single op expr
+  if (expr->ops.size() == 1 && expr->exprs.size() == 1) {
+    return res.Operator(*op_it);
+  }
 
   for (; expr_it != expr->exprs.end() && op_it != expr->ops.end();
        expr_it++, op_it++) {

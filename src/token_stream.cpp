@@ -38,6 +38,9 @@ std::optional<token::Value> TokenStream::Peek() {
 }
 
 void TokenStream::Next() {
+  if (Peek()) {
+    state_.last_tk = Peek().value();
+  }
   while (true) {
     state_.loc = Peek()->end;
     state_.pos += Peek()->len();

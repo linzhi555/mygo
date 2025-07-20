@@ -293,18 +293,36 @@ Result<Expr> Expr::parse_with_star(TokenStream& stream) {
   return Result<Expr>::ok(std::move(multi));
 }
 
+// TODO: not atomic!!! need rename
 Result<Expr> Expr::parse_atomic(TokenStream& stream) {
+  TokenStream::StateGuard guard(stream);
   Result<Expr> fc = Expr::parse_funcall(stream);
   if (fc.isOk()) {
+    guard.finish(fc.value_->start, fc.value_->end);
     return fc;
   }
 
-  Result<Expr> tk = Expr::parse_token(stream);
-  if (tk.isOk()) {
-    return tk;
+  bool sub_prefix = false;
+  auto v = stream.Peek();
+  if (v->type() == token::Type::Sub) {
+    sub_prefix = true;
+    stream.Next();
   }
 
-  return Err(stream.loc(), "parse atomic error");
+  Result<Expr> expr = Expr::parse_token(stream);
+  if (expr.isErr()) {
+    return Err(stream.loc(), "parse atomic error");
+  }
+
+  if (sub_prefix) {
+    auto multi = std::make_unique<Expr>(ExprType::OPS);
+    multi->ops.push_back(token::Type::Sub);
+    multi->exprs.push_back(expr.takeValue());
+    expr = Result<Expr>::ok(std::move(multi));
+  }
+
+  guard.finish(expr.value_->start, expr.value_->end);
+  return expr;
 }
 
 Result<Expr> Expr::parse_token(TokenStream& stream) {
@@ -325,8 +343,6 @@ Result<Expr> Expr::parse_token(TokenStream& stream) {
       stream.Next();
 
       NodePtr<Expr> res = MakeAtomic(v.value());
-      res->start = v->start;
-      res->end = v->end;
       guard.finish(res->start, res->end);
       return Result<Expr>::ok(std::move(res));
     }
@@ -508,8 +524,8 @@ Result<For> For::parse(TokenStream& stream) {
 
   std::cout << stream.Peek()->debug() << std::endl;
   EXPECT_TOKEN(stream, token::Type::Semicolon);
-  //EXPECT_TOKEN(stream, token::Type::Comma);
-  // SKIP_TOKEN(stream, token::Type::Enl);
+  // EXPECT_TOKEN(stream, token::Type::Comma);
+  //  SKIP_TOKEN(stream, token::Type::Enl);
 
   Result<Expr> expr_res = Expr::parse(stream);
   if (expr_res.isOk()) {

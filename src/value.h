@@ -50,6 +50,8 @@ class Value {
   }
 
   std::string ToString();
+
+  std::optional<Value> Operator(token::Type t);
   std::optional<Value> Operator(token::Type t, Value& other);
 };
 
