@@ -126,40 +126,30 @@ std::optional<Value> VM::std_eval(ast::Expr* expr) {
         assert("should not reach here" == nullptr);
     }
   } while (false);
-    
+
   // TODO: need implement for float
-  auto it = expr->exprs.begin();
-  auto v1 = std_eval(it->get());
-  if (v1->type != Value::Int) return std::nullopt;
-  int res = std::get<int>(v1->data);
-  it++;
+  auto expr_it = expr->exprs.begin();
+  std::optional<Value> v1 = std_eval(expr_it->get());
 
-  for (auto op_it = expr->ops.begin();
-       it != expr->exprs.end() && op_it != expr->ops.end(); it++, op_it++) {
-    auto temp = std_eval(it->get());
+  if (!v1) {
+    return std::nullopt;
+  }
+  expr_it++;
+  auto op_it = expr->ops.begin();
 
-    if (temp && temp.value().type == Value::Int) {
-      int i_data = std::get<int>(temp->data);
-      switch (*op_it) {
-        case token::Type::Plus:
-          res += i_data;
-          break;
-        case token::Type::Sub:
-          res -= i_data;
-          break;
-        case token::Type::Star:
-          res *= i_data;
-          break;
-        case token::Type::Slash:
-          res /= i_data;
-          break;
-        default:
-          return std::nullopt;
-      }
-    }
+  Value res = v1.value();
+
+  for (; expr_it != expr->exprs.end() && op_it != expr->ops.end();
+       expr_it++, op_it++) {
+    std::optional<Value> temp = std_eval(expr_it->get());
+    if (!temp) return std::nullopt;
+
+    std::optional<Value> res_temp = res.Operator(*op_it, temp.value());
+    if (!res_temp) return std::nullopt;
+    res = res_temp.value();
   }
 
-  return Value::Make<int>(res);
+  return res;
 }
 
 void std_print(VM* vm, std::vector<ast::Expr*>& args) {

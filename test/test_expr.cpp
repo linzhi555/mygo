@@ -4,6 +4,27 @@
 #include "logging.h"
 #include "vm.h"
 
+TEST(expr, calculator) {
+  std::string src = R"(
+var a = 14 + 3 * 3 - 3
+var b = 3.3 * 3.0 / 2 - 4.4
+print(a)
+)";
+  std::vector<uint8_t> src_data(src.begin(), src.end());
+  auto stream = mygo::TokenStream(std::move(src_data));
+
+  auto root_res = mygo::ast::Root::parse(stream);
+  EXPECT_FALSE(root_res.isErr());
+
+  mygo::VM vm;
+  mygo::ast::NodePtr<mygo::ast::Root> root = root_res.takeValue();
+  vm.run(root);
+
+  EXPECT_EQ(vm.global().Get("a")->As<int>(), 20);
+  EXPECT_GT(vm.global().Get("b")->As<float>(), 0.54);
+  EXPECT_LT(vm.global().Get("b")->As<float>(), 0.56);
+}
+
 TEST(expr, funcall) {
   std::string src = R"(
 func acc (a int) int {
