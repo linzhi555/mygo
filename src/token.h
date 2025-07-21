@@ -9,8 +9,19 @@ namespace mygo {
 
 namespace token {
 
+// TODO: need support Walrus
+// TODO: need support @
+// TODO: need support mygo
+// TODO: need support go
 #define TokenList     \
   T(Dot, ".")         \
+  T(At, "@")          \
+  T(Mygo, "mygo")     \
+  T(Go, "go")         \
+  T(Walrus, ":=")     \
+  T(And, "&&")        \
+  T(Not, "!")         \
+  T(Or, "||")         \
   T(True, "true")     \
   T(False, "flase")   \
   T(Var, "var")       \

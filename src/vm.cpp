@@ -103,7 +103,7 @@ std::optional<Value> VM::std_eval(ast::Expr* expr) {
     }
   }
 
-  // logic operator condition
+  // TODO: need support ! and && and ||
   do {
     if (expr->ops.size() != 1) break;
     token::Type t = expr->ops.at(0);
@@ -156,6 +156,7 @@ std::optional<Value> VM::std_eval(ast::Expr* expr) {
   return res;
 }
 
+// TODO: need support more builtin function install and query
 void std_print(VM* vm, std::vector<ast::Expr*>& args) {
   for (ast::Expr* arg : args) {
     auto v = vm->std_eval(arg);
@@ -265,6 +266,7 @@ void VM::run_for(ast::For* node) {
   }
 }
 
+// TODO: need support scope
 void VM::run_block(ast::NodePtr<ast::Block>& block) {
   for (const std::unique_ptr<ast::Node>& node : block->nodes_) {
     if (this->exit_ == ExitNormal || this->exit_ == ExitPanic) {
@@ -340,4 +342,4 @@ void VM::run_block(ast::NodePtr<ast::Block>& block) {
 }
 
 void VM::run(ast::NodePtr<ast::Root>& root) { run_block(root->block_); }
-}  // namespace mygo
+}  // namespace myg

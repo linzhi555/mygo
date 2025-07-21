@@ -5,6 +5,7 @@
 
 namespace mygo {
 
+//TODO: need support true scope
 std::optional<Value> Frame::Get(std::string_view key) {
   std::string k(key);
   if (vals_.find(k) == vals_.end()) {

@@ -43,6 +43,11 @@ class VM {
   Value ret_;
   std::optional<Value> std_eval(ast::Expr* expr);
 
+  // TODO mygo keyword
+  using SnapShot = std::string;
+  SnapShot ToSnapShot();
+  void FromSnapShot(const SnapShot&);
+
  private:
   void run_block(ast::NodePtr<ast::Block>& block);
   void run_if(ast::If* node);
