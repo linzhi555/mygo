@@ -26,12 +26,12 @@ bool is_logic_operator(token::Type t) {
 
 bool to_number(Value v, float& data) {
   // match start
-  if (v.type == Value::Int) {
+  if (v.type == Value::INT) {
     data = std::get<int>(v.data);
     return true;
   }
 
-  if (v.type == Value::Float) {
+  if (v.type == Value::FLOAT) {
     data = std::get<float>(v.data);
     return true;
   }
@@ -180,7 +180,7 @@ void VM::run_funcall(ast::Expr* node) {
   } else if (auto func_maybe = global().Get(f->v.str())) {
     // simulate push new stack frame and do funcall
     //
-    auto func = func_maybe->As<ast::Function*>();
+    auto func = func_maybe->As<Func>().AsUserDef();
 
     assert(node->exprs.size() - 1 == func->args.size());
 
@@ -231,7 +231,7 @@ void VM::run_if(ast::If* node) {
   for (ast::If::Branch& branch : node->branches_) {
     auto& [expr, block] = branch;
     std::optional<Value> v = std_eval(expr.get());
-    if (v && v->type == Value::Bool && std::get<bool>(v->data)) {
+    if (v && v->type == Value::BOOL && std::get<bool>(v->data)) {
       run_block(block);
       return;
     }
@@ -253,7 +253,7 @@ void VM::run_for(ast::For* node) {
 
     if (node->finish_cond_) {
       std::optional<Value> v = std_eval(node->finish_cond_.value().get());
-      if (!v.has_value() || v->type != Value::Bool ||
+      if (!v.has_value() || v->type != Value::BOOL ||
           !std::get<bool>(v->data)) {
         break;
       }
@@ -299,7 +299,7 @@ void VM::run_block(ast::NodePtr<ast::Block>& block) {
 
       case ast::Type::Function: {
         ast::Function* func = static_cast<ast::Function*>(node.get());
-        global().Set(func->func_name, Value::Make(func));
+        global().Set(func->func_name, Value::Make(Func(func)));
         break;
       }
 
@@ -342,4 +342,4 @@ void VM::run_block(ast::NodePtr<ast::Block>& block) {
 }
 
 void VM::run(ast::NodePtr<ast::Root>& root) { run_block(root->block_); }
-}  // namespace myg
+}  // namespace mygo

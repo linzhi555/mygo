@@ -5,19 +5,18 @@
 namespace mygo {
 
 std::string Value::ToString() {
-  if (type == Int) return std::to_string(std::get<int>(data));
+  if (type == INT) return std::to_string(std::get<int>(data));
 
-  if (type == Str) return std::get<std::string>(data);
+  if (type == STR) return std::get<std::string>(data);
 
-  if (type == Bool)
+  if (type == BOOL)
     return std::get<bool>(data) ? std::string("true") : std::string("false");
 
-  if (type == Float) return std::to_string(std::get<float>(data));
+  if (type == FLOAT) return std::to_string(std::get<float>(data));
 
-  if (type == Func)
-    return std::string("func(") + As<ast::Function*>()->func_name + ")";
+  if (type == FUNC) return std::string("func(") + As<Func>().ToString() + ")";
 
-  if (type == Struct) return std::string("Object");
+  if (type == STRUCT) return std::string("Object");
 
   return std::string();
 }
@@ -25,11 +24,11 @@ std::string Value::ToString() {
 std::optional<Value> Value::Operator(token::Type tk) {
   auto tt = this->type;
   if (tk == token::Type::Sub) {
-    if (tt == Int) {
+    if (tt == INT) {
       return Make<int>(-1 * this->As<int>());
     }
 
-    if (tt == Float) {
+    if (tt == FLOAT) {
       return Make<float>(-1 * this->As<float>());
     }
   }
@@ -39,19 +38,19 @@ std::optional<Value> Value::Operator(token::Type tk) {
 
 #define DO_BINARAY_OP(TK_TYPE, OP)                                \
   if (tk == TK_TYPE) {                                            \
-    if (tt == Int && ot == Int) {                                 \
+    if (tt == INT && ot == INT) {                                 \
       return Make<int>(this->As<int>() OP other.As<int>());       \
     }                                                             \
                                                                   \
-    if (tt == Int && ot == Float) {                               \
+    if (tt == INT && ot == FLOAT) {                               \
       return Make<float>(this->As<int>() OP other.As<float>());   \
     }                                                             \
                                                                   \
-    if (tt == Float && ot == Int) {                               \
+    if (tt == FLOAT && ot == INT) {                               \
       return Make<float>(this->As<float>() OP other.As<int>());   \
     }                                                             \
                                                                   \
-    if (tt == Float && ot == Float) {                             \
+    if (tt == FLOAT && ot == FLOAT) {                             \
       return Make<float>(this->As<float>() OP other.As<float>()); \
     }                                                             \
   }
