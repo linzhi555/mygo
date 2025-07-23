@@ -60,6 +60,20 @@ std::optional<Value> operator_equal(Value v1, Value v2) {
 
 }  // namespace
 
+void std_print(VM* vm, std::vector<ast::Expr*>& args);
+
+VM::VM() {
+  stack_.push_back(Frame());
+
+  // install builtins
+  stack_.at(0).Set("print", Value::Make(Func(std_print)));
+
+  stack_.at(0).Set("args", Value::Make(Func([](VM*, std::vector<ast::Expr*>&) {
+                     std::cout << "helloworld" << std::endl;
+                   })));
+  //
+};
+
 std::optional<Value> VM::std_eval(ast::Expr* expr) {
   if (expr->etype_ == ast::ExprType::FUNCALL) {
     run_funcall(expr);
@@ -156,7 +170,6 @@ std::optional<Value> VM::std_eval(ast::Expr* expr) {
   return res;
 }
 
-// TODO: need support more builtin function install and query
 void std_print(VM* vm, std::vector<ast::Expr*>& args) {
   for (ast::Expr* arg : args) {
     auto v = vm->std_eval(arg);
@@ -169,15 +182,25 @@ void VM::run_funcall(ast::Expr* node) {
   assert(node->etype_ == ast::ExprType::FUNCALL);
   assert(node->exprs.size() >= 1);
   ast::NodePtr<ast::Expr>& f = node->exprs.at(0);
+  std::optional<Value> func_maybe = global().Get(f->v.str());
+  if (!func_maybe.has_value()) {
+    exit_ = ExitPanic;
+    return;
+  }
+  if (func_maybe.value().type != Value::FUNC) {
+    exit_ = ExitPanic;
+    return;
+  };
 
-  if (f->v.str() == "print") {
+  Func func = func_maybe.value().As<Func>();
+
+  if (func.isBuiltin()) {
     std::vector<ast::Expr*> args;
     for (auto it = node->exprs.begin() + 1; it != node->exprs.end(); it++) {
       args.push_back(it->get());
     }
-
-    std_print(this, args);
-  } else if (auto func_maybe = global().Get(f->v.str())) {
+    func.AsBuiltin()(this, args);
+  } else {
     // simulate push new stack frame and do funcall
     //
     auto func = func_maybe->As<Func>().AsUserDef();
@@ -199,8 +222,6 @@ void VM::run_funcall(ast::Expr* node) {
     stack_.push_back(newframe);
     run_block(func->block);
     stack_.pop_back();
-  } else {
-    exit_ = ExitPanic;
   }
 }
 
@@ -339,6 +360,7 @@ void VM::run_block(ast::NodePtr<ast::Block>& block) {
       }
     }
   }
+  this->exit_ = ExitNormal;
 }
 
 void VM::run(ast::NodePtr<ast::Root>& root) { run_block(root->block_); }

@@ -51,4 +51,5 @@ print(result)
   mygo::VM vm;
   mygo::ast::NodePtr<mygo::ast::Root> root = root_res.takeValue();
   vm.run(root);
+  ASSERT_EQ(vm.exit_, mygo::VM::ExitNormal);
 }
