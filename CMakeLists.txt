@@ -23,6 +23,7 @@ include_directories(./src)
 
 set( LIB_SOURCES
         ./src/vm.cpp
+        ./src/server.cpp
         ./src/token.cpp
         ./src/token_stream.cpp
         ./src/logging.cpp

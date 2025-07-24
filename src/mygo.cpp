@@ -7,6 +7,7 @@
 
 #include "ast.h"
 #include "logging.h"
+#include "server.h"
 #include "token_stream.h"
 #include "vm.h"
 
@@ -31,6 +32,10 @@ int main(int argc, char** argv) {
   std::string file;
   if (argc == 2) {
     file = std::string(argv[1]);
+  } else {
+    mygo::Server server;
+    server.Run();
+    return 0;
   }
 
   std::ifstream fstream(file);
