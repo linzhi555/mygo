@@ -31,12 +31,23 @@ class Loop {
 
   void PostTask(std::unique_ptr<Task> t) { pending_tasks_->Push(std::move(t)); }
 
+  void PostTask(std::function<void(Loop*)> func) {
+    pending_tasks_->Push(std::unique_ptr<Task>(new RunOnce(func)));
+  }
+
+  void PostTaskDelay(std::function<void(Loop*)> func, Duration d) {
+    pending_tasks_->Push(std::unique_ptr<Task>(new RunOnceDelay(func, d)));
+  }
+
   std::string id() { return id_; }
   void run() {
     std::cout << id_ << " started" << std::endl;
     while (pending_tasks_->Size() > 0) {
       std::unique_ptr<Task> task = pending_tasks_->Pop();
-      task->run();
+      Task::State state = task->run(this);
+      if (state == Task::State::NotFinish) {
+        pending_tasks_->Push(std::move(task));
+      }
     }
     finished_ = true;
   }
@@ -57,14 +68,17 @@ int Server::Run() {
     loops.emplace_back(std::string("Loop" + std::to_string(i)));
   }
 
+  int i = 0;
   for (auto& loop : loops) {
-    for (int i = 0; i < 100; i++) {
-      std::string id = loop.id();
-      loop.PostTask(std::unique_ptr<Task>(new RunOnce([i, id]() {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        std::cout << id << " " << i << std::endl;
-      })));
-    }
+    std::string id = loop.id();
+    loop.PostTask([i, id](Loop* this_loop) {
+      std::this_thread::sleep_for(Duration(1000));
+      std::cout << id << " " << i << std::endl;
+      this_loop->PostTaskDelay(
+          [i](Loop*) { std::cout << "its a callback after" << i << std::endl; },
+          Duration((i + 1) * 1000));
+    });
+    i++;
 
     threads.emplace_back([](Loop* loop) { loop->run(); }, &loop);
   }
