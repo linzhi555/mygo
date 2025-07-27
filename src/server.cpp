@@ -14,7 +14,7 @@
 
 namespace mygo {
 
-const int MAX_THREAD = 3;
+const int MAX_THREAD = 1;
 
 class Loop {
  public:
@@ -35,8 +35,8 @@ class Loop {
     pending_tasks_->Push(std::unique_ptr<Task>(new RunOnce(func)));
   }
 
-  void PostTaskDelay(std::function<void(Loop*)> func, Duration d) {
-    pending_tasks_->Push(std::unique_ptr<Task>(new RunOnceDelay(func, d)));
+  void PostTimerTask(bool repeat, std::function<void(Loop*)> func, Duration d) {
+    pending_tasks_->Push(std::unique_ptr<Task>(new TimerTask(repeat, func, d)));
   }
 
   std::string id() { return id_; }
@@ -74,7 +74,8 @@ int Server::Run() {
     loop.PostTask([i, id](Loop* this_loop) {
       std::this_thread::sleep_for(Duration(1000));
       std::cout << id << " " << i << std::endl;
-      this_loop->PostTaskDelay(
+      this_loop->PostTimerTask(
+          true,
           [i](Loop*) { std::cout << "its a callback after" << i << std::endl; },
           Duration((i + 1) * 1000));
     });

@@ -1,6 +1,7 @@
 #pragma once
-#include <chrono>
 #include <functional>
+
+#include "common.h"
 namespace mygo {
 
 class Loop;
@@ -33,22 +34,27 @@ class RunOnce : public Task {
   std::function<void(Loop*)> func_;
 };
 
-using Duration = std::chrono::milliseconds;
-using Time = std::chrono::steady_clock::time_point;
-
-class RunOnceDelay : public RunOnce {
+class TimerTask : public Task {
  public:
-  RunOnceDelay(std::function<void(Loop*)> f, std::chrono::milliseconds delay)
-      : RunOnce(f) {
-    init_time_ = std::chrono::steady_clock::now();
-    delay_ = delay;
-  }
+  TimerTask(bool repeat, std::function<void(Loop*)> f,
+            std::chrono::milliseconds delay)
+      : repeat_(repeat),
+        init_time_(std::chrono::steady_clock::now()),
+        delay_(delay),
+        func_(f) {}
+
   State run(Loop* l) override {
-    if (did_run_) return State::Finish;
+    if (finished_) return State::Finish;
     if (timeOut()) {
       func_(l);
-      did_run_ = true;
-      return State::Finish;
+
+      if (!repeat_) {
+        finished_ = true;
+        return State::Finish;
+      } else {
+        init_time_ = std::chrono::steady_clock::now();
+        return State::NotFinish;
+      }
     }
     return State::NotFinish;
   }
@@ -62,11 +68,14 @@ class RunOnceDelay : public RunOnce {
 
     return false;
   }
-  ~RunOnceDelay() override = default;
+  ~TimerTask() override = default;
 
  private:
+  bool finished_ = false;
+  bool repeat_;
   Time init_time_;
   Duration delay_;
+  std::function<void(Loop*)> func_;
 };
 
 }  // namespace mygo

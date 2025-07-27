@@ -1,3 +1,4 @@
+#include <chrono>
 #include <string>
 namespace mygo {
 struct Loc {
@@ -19,9 +20,7 @@ struct Loc {
   }
 };
 
-inline std::ostream& operator<<(std::ostream& o, Loc loc) {
-  o << loc.ToString();
-  return o;
-}
+using Duration = std::chrono::milliseconds;
+using Time = std::chrono::steady_clock::time_point;
 
 }  // namespace mygo
