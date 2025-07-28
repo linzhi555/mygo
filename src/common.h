@@ -6,10 +6,10 @@ struct Loc {
   int coloum;
 
   ~Loc() = default;
-  Loc(const Loc&) = default;
-  Loc() : line(1), coloum(1) {};
+  Loc(const Loc &) = default;
+  Loc() : line(1), coloum(1){};
 
-  bool operator==(const Loc& other) {
+  bool operator==(const Loc &other) {
     return line == other.line && coloum == other.coloum;
   }
 
@@ -23,4 +23,7 @@ struct Loc {
 using Duration = std::chrono::milliseconds;
 using Time = std::chrono::steady_clock::time_point;
 
-}  // namespace mygo
+using IP = std::string;
+using Port = int;
+
+} // namespace mygo
