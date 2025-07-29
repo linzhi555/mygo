@@ -15,6 +15,9 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 
+add_subdirectory(./third_party/libuv-1.51.0)
+include_directories(third_party/libuv-1.51.0/include)
+
 add_subdirectory(./third_party/googletest-1.17.0)
 include_directories(./third_party/googletest-1.17.0/googletest/include)
 
@@ -33,6 +36,7 @@ set( LIB_SOURCES
 )
 
 add_library(mygodev STATIC ${LIB_SOURCES})
+target_link_libraries(mygodev PRIVATE uv)
 
 
 set(CMAKE_BUILD_TYPE Debug)
