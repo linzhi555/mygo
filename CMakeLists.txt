@@ -26,10 +26,11 @@ include_directories(./src)
 
 set( LIB_SOURCES
         ./src/vm.cpp
-        ./src/server.cpp
+        ./src/loop.cpp
         ./src/token.cpp
         ./src/token_stream.cpp
         ./src/logging.cpp
+        ./src/server.cpp
         ./src/ast.cpp
         ./src/value.cpp
         ./src/frame.cpp

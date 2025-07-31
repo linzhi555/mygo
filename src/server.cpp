@@ -13,7 +13,6 @@
 
 #include "channel.h"
 #include "loop.h"
-#include "task.h"
 
 namespace mygo {
 
