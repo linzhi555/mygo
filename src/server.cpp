@@ -32,14 +32,13 @@ int Server::Run() {
   for (auto &loop : loops) {
     std::string id = loop.id();
     loop.PostTask([i, id](Loop *this_loop) {
-      std::this_thread::sleep_for(Duration(1000));
       std::cout << id << " " << i << std::endl;
       this_loop->PostTimerTask(
           true,
           [i](Loop *) {
             std::cout << "its a callback after" << i << std::endl;
           },
-          Duration((i + 1) * 1000));
+          Duration((i + 1) * Sec + 1 * Sec));
     });
     i++;
 

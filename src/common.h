@@ -1,4 +1,3 @@
-#include <chrono>
 #include <string>
 namespace mygo {
 struct Loc {
@@ -20,8 +19,12 @@ struct Loc {
   }
 };
 
-using Duration = std::chrono::milliseconds;
-using Time = std::chrono::steady_clock::time_point;
+// duration in us
+using Duration = uint64_t;
+constexpr Duration NanoSec = 1;
+constexpr Duration MicroSec = 1000 * NanoSec;
+constexpr Duration MiliSec = 1000 * MicroSec;
+constexpr Duration Sec = 1000 * MiliSec;
 
 using IP = std::string;
 using Port = int;

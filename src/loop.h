@@ -1,4 +1,3 @@
-#pragma once
 #include "channel.h"
 #include "common.h"
 #include <functional>
@@ -39,44 +38,20 @@ protected:
 
 class TimerTask : public Task {
 public:
-  TimerTask(bool repeat, std::function<void(Loop *)> f,
-            std::chrono::milliseconds delay)
-      : repeat_(repeat), init_time_(std::chrono::steady_clock::now()),
-        delay_(delay), func_(f) {}
+  TimerTask(bool repeat, std::function<void(Loop *)> f, Duration duration)
+      : repeat_(repeat), duration_(duration), func_(f) {}
 
-  State run(Loop *l) override {
-    if (finished_)
-      return State::Finish;
-    if (timeOut()) {
-      func_(l);
-
-      if (!repeat_) {
-        finished_ = true;
-        return State::Finish;
-      } else {
-        init_time_ = std::chrono::steady_clock::now();
-        return State::NotFinish;
-      }
-    }
-    return State::NotFinish;
-  }
-
-  bool timeOut() {
-    Time now = std::chrono::steady_clock::now();
-    Duration elapsed = std::chrono::duration_cast<Duration>(now - init_time_);
-    if (elapsed > delay_) {
-      return true;
-    }
-
-    return false;
-  }
+  State run(Loop *loop) override;
+  bool timeOut() { return timeout_; }
   ~TimerTask() override = default;
 
 private:
+  bool inited_ = false;
   bool finished_ = false;
-  bool repeat_;
-  Time init_time_;
-  Duration delay_;
+  bool repeat_ = false;
+  bool timeout_ = false;
+  uv_timer_t uv_timer_;
+  Duration duration_;
   std::function<void(Loop *)> func_;
 };
 
@@ -143,11 +118,12 @@ public:
   std::string id() { return id_; }
   void run();
 
+  uv_loop_t *uv_loop_ = nullptr;
+
 private:
   std::unique_ptr<Chan> pending_tasks_;
   std::string id_;
   bool finished_ = false;
-  uv_loop_t *uv_loop_ = nullptr;
 };
 
 } // namespace mygo
