@@ -8,19 +8,19 @@ template <typename T>
 class Channel {
  public:
   T Pop() {
-    std::unique_lock<std::mutex> lock_guard(mutex_);
+    std::lock_guard<std::mutex> lock_guard(mutex_);
     T t = std::move(queue_.front());
     queue_.pop();
     return t;
   }
 
   size_t Size() {
-    std::unique_lock<std::mutex> lock_guard(mutex_);
+    std::lock_guard<std::mutex> lock_guard(mutex_);
     return queue_.size();
   }
 
   void Push(T t) {
-    std::unique_lock<std::mutex> lock_guard(mutex_);
+    std::lock_guard<std::mutex> lock_guard(mutex_);
     queue_.push(std::move(t));
   }
 

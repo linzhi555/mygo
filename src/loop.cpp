@@ -41,13 +41,23 @@ Task::State TimerTask::run(Loop* loop) {
 void Loop::run() {
   std::cout << id_ << " started" << std::endl;
 
-  while (pending_tasks_->Size() > 0) {
-    uv_run(uv_loop_, UV_RUN_ONCE);
-    std::unique_ptr<Task> task = pending_tasks_->Pop();
-    Task::State state = task->run(this);
-    if (state == Task::State::NotFinish) {
+  while (true) {
+    std::cout << "uv run once" << std::endl;
+
+    std::vector<std::unique_ptr<Task>> not_finished;
+    while (pending_tasks_->Size() > 0) {
+      std::unique_ptr<Task> task = pending_tasks_->Pop();
+      Task::State state = task->run(this);
+      if (state == Task::State::NotFinish) {
+        not_finished.push_back(std::move(task));
+      }
+    }
+
+    for (std::unique_ptr<Task>& task : not_finished) {
       pending_tasks_->Push(std::move(task));
     }
+
+    uv_run(uv_loop_, UV_RUN_ONCE);
   }
   finished_ = true;
 }
