@@ -1,5 +1,7 @@
 #include "server.h"
 
+#include <uv.h>
+
 #include <chrono>
 #include <functional>
 #include <iostream>
@@ -8,8 +10,6 @@
 #include <thread>
 #include <utility>
 #include <vector>
-
-#include <uv.h>
 
 #include "channel.h"
 #include "loop.h"
@@ -29,23 +29,23 @@ int Server::Run() {
   }
 
   int i = 0;
-  for (auto &loop : loops) {
+  for (auto& loop : loops) {
     std::string id = loop.id();
-    loop.PostTask([i, id](Loop *this_loop) {
+    loop.PostTask([i, id](Loop* this_loop) {
       std::cout << id << " " << i << std::endl;
       this_loop->PostTimerTask(
           true,
-          [i](Loop *) {
-            std::cout << "its a callback after" << i << std::endl;
-          },
+          [i](Loop*) { std::cout << "its a callback after" << i << std::endl; },
           Duration((i + 1) * Sec + 1 * Sec));
     });
+
+    loop.PostTask(std::unique_ptr<Task>(new TcpServerTask("127.0.0.1", 8888)));
     i++;
 
-    threads.emplace_back([](Loop *loop) { loop->run(); }, &loop);
+    threads.emplace_back([](Loop* loop) { loop->run(); }, &loop);
   }
 
-  for (std::thread &thread : threads) {
+  for (std::thread& thread : threads) {
     thread.join();
   }
 
@@ -58,4 +58,4 @@ int Server::Stop() {
   return 0;
 }
 
-} // namespace mygo
+}  // namespace mygo
