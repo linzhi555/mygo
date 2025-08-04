@@ -1,5 +1,6 @@
 #include <uv.h>
 
+#include <cstring>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -69,9 +70,11 @@ class TcpServerTask : public Task {
     std::cout << "connction close" << id << std::endl;
   }
 
-  virtual void OnData(Loop&, ConnectId id, std::vector<uint8_t> data) {
-    std::cout << "receive data on connection " << id << " size " << data.size()
+  virtual void OnData(ConnectId id, const char* data) {
+    std::cout << "receive data on connection " << id << " size " << strlen(data)
               << std::endl;
+
+    std::cout << data << std::endl;
   }
 
   State run(Loop* loop) override;
@@ -80,13 +83,21 @@ class TcpServerTask : public Task {
   uv_loop_t* uv_loop_;
 
  private:
+  static void on_new_connection(uv_stream_t* server, int status);
+  static void on_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf);
+  int new_connection_id() {
+    cur_connction_id_++;
+    return cur_connction_id_;
+  }
+
   bool inited_ = false;
   bool err_ = false;
   IP ip_;
   Port port_;
   struct sockaddr_in addr_;
   uv_tcp_t server_;
-  std::vector<ConnectId> connctions_;
+  int cur_connction_id_ = -1;
+  std::unordered_map<uv_tcp_t*, int> connection_id_map_;
 };
 
 class Loop {

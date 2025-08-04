@@ -2,7 +2,9 @@
 
 #include <uv.h>
 
-#include <cstring>
+#include <cstdlib>
+
+#include "string.h"
 namespace mygo {
 
 Task::State TimerTask::run(Loop* loop) {
@@ -88,10 +90,13 @@ void send_response(uv_stream_t* client) {
   // 发送响应
   uv_write(req, client, &buf, 1, on_write);
 }
-void on_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf) {
+void TcpServerTask::on_read(uv_stream_t* client, ssize_t nread,
+                            const uv_buf_t* buf) {
   if (nread > 0) {
-    // 解析 HTTP 请求（此处简单打印请求）
-    printf("Received request:\n%.*s", (int)nread, buf->base);
+    auto* tcp_server = static_cast<TcpServerTask*>(client->data);
+    int id = tcp_server->connection_id_map_[(uv_tcp_t*)(client)];
+
+    tcp_server->OnData(id, buf->base);
     send_response(client);
   }
 
@@ -105,7 +110,7 @@ void on_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf) {
   }
 }
 
-void on_new_connection(uv_stream_t* server, int status) {
+void TcpServerTask::on_new_connection(uv_stream_t* server, int status) {
   auto* tcp_server = static_cast<TcpServerTask*>(server->data);
   uv_loop_t* loop = tcp_server->uv_loop_;
   if (status < 0) {
@@ -116,6 +121,8 @@ void on_new_connection(uv_stream_t* server, int status) {
   uv_tcp_init(loop, client);
   if (uv_accept(server, (uv_stream_t*)client) == 0) {
     uv_read_start((uv_stream_t*)client, alloc_buffer, on_read);
+    client->data = tcp_server;
+    tcp_server->connection_id_map_[client] = tcp_server->new_connection_id();
   } else {
     uv_close((uv_handle_t*)client, (uv_close_cb)free);
   }
