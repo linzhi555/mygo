@@ -90,13 +90,14 @@ void send_response(uv_stream_t* client) {
   // 发送响应
   uv_write(req, client, &buf, 1, on_write);
 }
+
 void TcpServerTask::on_read(uv_stream_t* client, ssize_t nread,
                             const uv_buf_t* buf) {
   if (nread > 0) {
     auto* tcp_server = static_cast<TcpServerTask*>(client->data);
     int id = tcp_server->connection_id_map_[(uv_tcp_t*)(client)];
 
-    tcp_server->OnData(id, buf->base);
+    tcp_server->new_data_ = DataEvent{id, std::string(buf->base)};
     send_response(client);
   }
 
@@ -122,7 +123,11 @@ void TcpServerTask::on_new_connection(uv_stream_t* server, int status) {
   if (uv_accept(server, (uv_stream_t*)client) == 0) {
     uv_read_start((uv_stream_t*)client, alloc_buffer, on_read);
     client->data = tcp_server;
-    tcp_server->connection_id_map_[client] = tcp_server->new_connection_id();
+
+    ConnectId new_id = tcp_server->new_connection_id();
+    tcp_server->connection_id_map_[client] = new_id;
+    tcp_server->new_connect_ = ConnectEvent{new_id};
+
   } else {
     uv_close((uv_handle_t*)client, (uv_close_cb)free);
   }
@@ -155,6 +160,19 @@ Task::State TcpServerTask::run(Loop* loop) {
     }
 
     inited_ = true;
+    return State::NotFinish;
+  }
+
+  if (new_connect_) {
+    OnConnect(*loop, new_connect_->id);
+    new_connect_ = std::nullopt;
+    return State::NotFinish;
+  }
+
+  if (new_data_) {
+    OnData(new_data_->id, new_data_->data);
+    new_data_ = std::nullopt;
+    return State::NotFinish;
   }
 
   return State::NotFinish;

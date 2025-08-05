@@ -4,6 +4,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <optional>
 
 #include "channel.h"
 #include "common.h"
@@ -70,8 +71,8 @@ class TcpServerTask : public Task {
     std::cout << "connction close" << id << std::endl;
   }
 
-  virtual void OnData(ConnectId id, const char* data) {
-    std::cout << "receive data on connection " << id << " size " << strlen(data)
+  virtual void OnData(ConnectId id, std::string data) {
+    std::cout << "receive data on connection " << id << " size " << data
               << std::endl;
 
     std::cout << data << std::endl;
@@ -83,6 +84,15 @@ class TcpServerTask : public Task {
   uv_loop_t* uv_loop_;
 
  private:
+  struct ConnectEvent {
+    ConnectId id;
+  };
+
+  struct DataEvent {
+    ConnectId id;
+    std::string data;
+  };
+
   static void on_new_connection(uv_stream_t* server, int status);
   static void on_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf);
   int new_connection_id() {
@@ -92,12 +102,15 @@ class TcpServerTask : public Task {
 
   bool inited_ = false;
   bool err_ = false;
+  bool new_data_flag_ = false;
   IP ip_;
   Port port_;
   struct sockaddr_in addr_;
   uv_tcp_t server_;
   int cur_connction_id_ = -1;
   std::unordered_map<uv_tcp_t*, int> connection_id_map_;
+  std::optional<ConnectEvent> new_connect_;
+  std::optional<DataEvent> new_data_;
 };
 
 class Loop {
