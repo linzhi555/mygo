@@ -76,21 +76,6 @@ void on_write(uv_write_t* req, int status) {
   free(req);
 }
 
-void send_response(uv_stream_t* client) {
-  // HTTP 响应内容
-  const char* response =
-      "HTTP/1.1 200 OK\r\n"
-      "Content-Type: text/html\r\n"
-      "Content-Length: 12\r\n"
-      "\r\n"
-      "Hello World\n";
-  // 创建写请求
-  uv_write_t* req = (uv_write_t*)malloc(sizeof(uv_write_t));
-  uv_buf_t buf = uv_buf_init((char*)response, strlen(response));
-  // 发送响应
-  uv_write(req, client, &buf, 1, on_write);
-}
-
 void TcpServerTask::on_read(uv_stream_t* client, ssize_t nread,
                             const uv_buf_t* buf) {
   if (nread > 0) {
@@ -98,7 +83,6 @@ void TcpServerTask::on_read(uv_stream_t* client, ssize_t nread,
     int id = tcp_server->connection_id_map_[(uv_tcp_t*)(client)];
 
     tcp_server->new_data_ = DataEvent{id, std::string(buf->base)};
-    send_response(client);
   }
 
   free(buf->base);  // 无论成功与否都要释放缓冲区
@@ -126,12 +110,26 @@ void TcpServerTask::on_new_connection(uv_stream_t* server, int status) {
 
     ConnectId new_id = tcp_server->new_connection_id();
     tcp_server->connection_id_map_[client] = new_id;
+    tcp_server->connection_handle_map_[new_id] = client;
     tcp_server->new_connect_ = ConnectEvent{new_id};
 
   } else {
     uv_close((uv_handle_t*)client, (uv_close_cb)free);
   }
 }
+
+static void send_response(uv_stream_t* client, const char* response) {
+  uv_write_t* req = (uv_write_t*)malloc(sizeof(uv_write_t));
+  uv_buf_t buf = uv_buf_init((char*)response, strlen(response));
+  uv_write(req, client, &buf, 1, on_write);
+}
+
+void TcpServerTask::SendData(ConnectId id, std::string data) {
+  uv_stream_t* stream = (uv_stream_t*)connection_handle_map_[id];
+  send_response(stream, data.c_str());
+}
+
+// HTTP 响应内容
 
 Task::State TcpServerTask::run(Loop* loop) {
   uv_loop_ = loop->uv_loop_;

@@ -72,11 +72,22 @@ class TcpServerTask : public Task {
   }
 
   virtual void OnData(ConnectId id, std::string data) {
+    const std::string response =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html\r\n"
+        "Content-Length: 12\r\n"
+        "\r\n"
+        "Hello World\n";
+
     std::cout << "receive data on connection " << id << " size " << data
               << std::endl;
 
     std::cout << data << std::endl;
+
+    SendData(id, response);
   }
+
+  void SendData(ConnectId id, std::string data);
 
   State run(Loop* loop) override;
   TcpServerTask(IP ip, Port port) : ip_(ip), port_(port) {};
@@ -109,6 +120,7 @@ class TcpServerTask : public Task {
   uv_tcp_t server_;
   int cur_connction_id_ = -1;
   std::unordered_map<uv_tcp_t*, int> connection_id_map_;
+  std::unordered_map<int, uv_tcp_t*> connection_handle_map_;
   std::optional<ConnectEvent> new_connect_;
   std::optional<DataEvent> new_data_;
 };
