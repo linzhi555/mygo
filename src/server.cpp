@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "channel.h"
-#include "loop.h"
+#include "loop/loop.h"
 
 namespace mygo {
 
