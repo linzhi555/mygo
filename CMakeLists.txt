@@ -25,8 +25,11 @@ include_directories(./third_party/googletest-1.17.0/googletest/include)
 include_directories(./src)
 
 set( LIB_SOURCES
+
+        ./src/loop/loop.cpp
+        ./src/loop/task.cpp
+
         ./src/vm.cpp
-        ./src/loop.cpp
         ./src/token.cpp
         ./src/token_stream.cpp
         ./src/logging.cpp

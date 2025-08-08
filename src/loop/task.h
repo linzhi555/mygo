@@ -10,6 +10,7 @@
 
 namespace mygo {
 class Loop;
+
 class Task {
  public:
   enum class State {
@@ -126,7 +127,17 @@ class TcpServerTask : public Task {
 
 // TODO: implement TcpClientTask
 class TcpClientTask : public Task {
+  TcpClientTask(IP ip, Port port, std::string need_send,
+                std::function<void(std::string response)> call_back)
+      : ip_(ip), port_(port), need_send_(need_send), call_back_(call_back) {};
   virtual ~TcpClientTask() {};
+
+  State run(Loop* loop) override;
+
+  IP ip_;
+  Port port_;
+  std::string need_send_;
+  std::function<void(std::string response)> call_back_;
 };
 
 }  // namespace mygo

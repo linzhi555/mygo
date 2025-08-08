@@ -115,4 +115,6 @@ Task::State TcpServerTask::run(Loop* loop) {
   return State::NotFinish;
 }
 
+Task::State TcpClientTask::run(Loop* loop) { return Task::State::NotFinish; }
+
 }  // namespace mygo

@@ -4,7 +4,6 @@
 
 #include <cstdlib>
 
-#include "string.h"
 namespace mygo {
 
 Task::State TimerTask::run(Loop* loop) {
@@ -63,6 +62,5 @@ void Loop::run() {
   }
   finished_ = true;
 }
-
 
 }  // namespace mygo
