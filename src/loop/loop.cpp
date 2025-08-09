@@ -7,7 +7,7 @@
 namespace mygo {
 
 Task::State TimerTask::run(Loop* loop) {
-  if (!inited_) {
+  if (state_.isInitial()) {
     uv_timer_init(loop->uv_loop_, &this->uv_timer_);
     uv_timer_.data = &this->timeout_;
 
@@ -23,20 +23,20 @@ Task::State TimerTask::run(Loop* loop) {
 
     uv_timer_start(&uv_timer_, timer_cb, d, d);
 
-    inited_ = true;
-    return State::NotFinish;
+    state_.next();
+    return state_;
   }
 
-  if (finished_) return State::Finish;
+  if (state_.isFinished()) return state_;
   if (timeout_) {
     func_(loop);
     if (!repeat_) {
-      finished_ = true;
+      state_.setFinished();
     } else {
       timeout_ = false;
     }
   }
-  return State::NotFinish;
+  return state_;
 }
 
 void Loop::run() {
@@ -49,7 +49,7 @@ void Loop::run() {
     while (pending_tasks_->Size() > 0) {
       std::unique_ptr<Task> task = pending_tasks_->Pop();
       Task::State state = task->run(this);
-      if (state == Task::State::NotFinish) {
+      if (state.isNotFinished()) {
         not_finished.push_back(std::move(task));
       }
     }

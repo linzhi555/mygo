@@ -1,6 +1,7 @@
 #pragma once
 #include <uv.h>
 
+#include <cassert>
 #include <cstring>
 #include <functional>
 #include <iostream>
@@ -13,10 +14,33 @@ class Loop;
 
 class Task {
  public:
-  enum class State {
-    Finish,
-    NotFinish,
-    Error,
+  class State {
+   public:
+    State() : internal_(0) {}
+    State(int state) : internal_(state) {}
+
+    static State Error() { return State(-2); }
+    static State Finished() { return State(-1); }
+
+    bool operator==(const State& other) { return is(other); }
+
+    bool is(int state) { return internal_ == state; }
+    bool is(const State& other) { return this->internal_ == other.internal_; }
+    bool isAfter(int state) { return state > internal_; }
+    bool isInitial() { return internal_ == 0; }
+    bool isError() { return internal_ < -1; }
+    bool isFinished() { return internal_ == -1; }
+    bool isNotFinished() { return internal_ >= 0; }
+    void setError() { internal_ = -2; }
+    void setFinished() { internal_ = -1; }
+
+    void next() {
+      assert(internal_ >= 0);
+      internal_++;
+    }
+
+   private:
+    int internal_;
   };
 
   virtual ~Task() {};
@@ -28,15 +52,21 @@ class RunOnce : public Task {
  public:
   RunOnce(std::function<void(Loop*)> f) { func_ = f; }
   State run(Loop* l) override {
-    if (did_run_) return State::Finish;
-    func_(l);
-    did_run_ = true;
-    return State::Finish;
+    if (state_.isFinished()) {
+      return state_;
+    }
+    if (state_.isInitial()) {
+      func_(l);
+      state_.setFinished();
+      return state_;
+    }
+
+    assert("should not reach here" && false);
   }
   ~RunOnce() override = default;
 
  protected:
-  bool did_run_ = false;
+  State state_;
   std::function<void(Loop*)> func_;
 };
 
@@ -50,8 +80,7 @@ class TimerTask : public Task {
   ~TimerTask() override = default;
 
  private:
-  bool inited_ = false;
-  bool finished_ = false;
+  State state_;
   bool repeat_ = false;
   bool timeout_ = false;
   uv_timer_t uv_timer_;
@@ -112,8 +141,7 @@ class TcpServerTask : public Task {
     return cur_connction_id_;
   }
 
-  bool inited_ = false;
-  bool err_ = false;
+  State state_;
   IP ip_;
   Port port_;
   struct sockaddr_in addr_;
@@ -134,6 +162,7 @@ class TcpClientTask : public Task {
 
   State run(Loop* loop) override;
 
+  State state_;
   IP ip_;
   Port port_;
   std::string need_send_;

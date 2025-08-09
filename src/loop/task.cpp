@@ -72,9 +72,9 @@ void TcpServerTask::SendData(ConnectId id, std::string data) {
 
 Task::State TcpServerTask::run(Loop* loop) {
   uv_loop_ = loop->uv_loop_;
-  if (err_) return State::Error;
+  if (state_.isError()) return state_;
 
-  if (!inited_) {
+  if (state_.isInitial()) {
     std::cout << "initialize tcp server task in " << ip_ << ":" << port_
               << std::endl;
 
@@ -83,8 +83,8 @@ Task::State TcpServerTask::run(Loop* loop) {
     int rc = uv_tcp_bind(&server_, (const struct sockaddr*)&addr_, 0);
     if (rc != 0) {
       fprintf(stderr, "bind ip error%s\n", uv_strerror(rc));
-      err_ = true;
-      return State::Error;
+      state_.setError();
+      return state_;
     }
 
     server_.data = this;
@@ -92,29 +92,29 @@ Task::State TcpServerTask::run(Loop* loop) {
     rc = uv_listen((uv_stream_t*)&server_, 128, on_new_connection);
     if (rc != 0) {
       fprintf(stderr, "Listen error: %s\n", uv_strerror(rc));
-      err_ = true;
-      return State::Error;
+      state_.setError();
+      return state_;
     }
 
-    inited_ = true;
-    return State::NotFinish;
+    state_.next();
+    return state_;
   }
 
   if (new_connect_) {
     OnConnect(*loop, new_connect_->id);
     new_connect_ = std::nullopt;
-    return State::NotFinish;
+    return state_;
   }
 
   if (new_data_) {
     OnData(new_data_->id, new_data_->data);
     new_data_ = std::nullopt;
-    return State::NotFinish;
+    return state_;
   }
 
-  return State::NotFinish;
+  return state_;
 }
 
-Task::State TcpClientTask::run(Loop* loop) { return Task::State::NotFinish; }
+Task::State TcpClientTask::run(Loop* _) { return state_; }
 
 }  // namespace mygo
