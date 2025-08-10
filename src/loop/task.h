@@ -155,6 +155,7 @@ class TcpServerTask : public Task {
 
 // TODO: implement TcpClientTask
 class TcpClientTask : public Task {
+ public:
   TcpClientTask(IP ip, Port port, std::string need_send,
                 std::function<void(std::string response)> call_back)
       : ip_(ip), port_(port), need_send_(need_send), call_back_(call_back) {};
@@ -165,6 +166,8 @@ class TcpClientTask : public Task {
   State state_;
   IP ip_;
   Port port_;
+
+  uv_tcp_t client;
   std::string need_send_;
   std::function<void(std::string response)> call_back_;
 };

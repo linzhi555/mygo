@@ -13,10 +13,12 @@
 
 #include "channel.h"
 #include "loop/loop.h"
+#include "loop/task.h"
 
 namespace mygo {
 
 const int MAX_THREAD = 1;
+int count = 0;
 
 int Server::Run() {
   running_ = true;
@@ -35,7 +37,18 @@ int Server::Run() {
       std::cout << id << " " << i << std::endl;
       this_loop->PostTimerTask(
           true,
-          [i](Loop*) { std::cout << "its a callback after" << i << std::endl; },
+          [](Loop* loop) {
+            count++;
+            std::cout << "count is " << " " << count << std::endl;
+            if (count == 1) {
+              loop->PostTask(std::unique_ptr<Task>(new TcpClientTask(
+                  std::string("127.0.0.1"), 8888, std::string("hello world"),
+                  [](std::string response) {
+                    std::cout << response << std::endl;
+                  })));
+              std::cout << "boot client task" << std::endl;
+            }
+          },
           Duration((i + 1) * Sec + 1 * Sec));
     });
 
