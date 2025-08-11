@@ -1,5 +1,6 @@
 #include "loop/task.h"
 
+#include <cassert>
 #include <cstdio>
 #include <string>
 
@@ -79,7 +80,7 @@ Task::State TcpServerTask::run(Loop* loop) {
   uv_loop_ = loop->uv_loop_;
   if (state_.isError()) return state_;
 
-  if (state_.isInitial()) {
+  if (state_.isS0()) {
     std::cout << "initialize tcp server task in " << ip_ << ":" << port_
               << std::endl;
 
@@ -124,9 +125,13 @@ void on_close(uv_handle_t* handle) { free(handle); }
 void free_write_req(uv_write_t* req) { free(req); }
 
 void on_read(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf) {
+  TcpClientTask* task = (TcpClientTask*)stream->data;
+  assert(task->state_.isS2());
   if (nread > 0) {
-    printf("Received: %.*s\n", (int)nread, buf->base);
+    task->response_ = std::string(buf->base);
+    task->state_.next();
   } else if (nread < 0) {
+    task->state_.setError();
     if (nread != UV_EOF)
       fprintf(stderr, "Read error: %s\n", uv_strerror(nread));
     uv_close((uv_handle_t*)stream, on_close);
@@ -135,7 +140,6 @@ void on_read(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf) {
 }
 
 void on_connect(uv_connect_t* connect_req, int status) {
-  std::cout << __FUNCTION__ << std::endl;
   TcpClientTask* task = (TcpClientTask*)connect_req->data;
   if (status < 0) {
     fprintf(stderr, "Connection error: %s\n", uv_strerror(status));
@@ -144,21 +148,20 @@ void on_connect(uv_connect_t* connect_req, int status) {
     return;
   }
 
-  std::cout << "connected to server " << task->ip_ << task->port_ << std::endl;
-
   uv_stream_t* stream = connect_req->handle;
+  stream->data = task;
   free(connect_req);
-  // Start reading
   uv_read_start(stream, alloc_buffer, on_read);
-  // Write a message to the server
-  const char* message = "Hello from libuv client!";
-  uv_buf_t buf = uv_buf_init((char*)message, strlen(message));
+  uv_buf_t buf =
+      uv_buf_init((char*)task->need_send_.c_str(), task->need_send_.size());
   uv_write_t* write_req = (uv_write_t*)malloc(sizeof(uv_write_t));
   uv_write(write_req, stream, &buf, 1, on_write);
+  assert(task->state_.isS1());
+  task->state_.next();
 }
 
 Task::State TcpClientTask::run(Loop* loop) {
-  if (state_.isInitial()) {
+  if (state_.isS0()) {
     uv_tcp_init(loop->uv_loop_, &client);
 
     uv_connect_t* conntect_req = (uv_connect_t*)malloc(sizeof(uv_connect_t));
@@ -175,6 +178,20 @@ Task::State TcpClientTask::run(Loop* loop) {
       fprintf(stderr, "Connection %d error: %s\n", err, uv_strerror(err));
     }
 
+    state_.next();
+    return state_;
+  }
+
+  if (state_.isS1()) {
+    return state_;
+  }
+
+  if (state_.isS2()) {
+    return state_;
+  }
+
+  if (state_.isS3()) {
+    call_back_(response_);
     state_.next();
     return state_;
   }

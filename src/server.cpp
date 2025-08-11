@@ -44,7 +44,8 @@ int Server::Run() {
               loop->PostTask(std::unique_ptr<Task>(new TcpClientTask(
                   std::string("127.0.0.1"), 8888, std::string("hello world"),
                   [](std::string response) {
-                    std::cout << response << std::endl;
+                    std::cout << "tcp client receive data " << response
+                              << std::endl;
                   })));
               std::cout << "boot client task" << std::endl;
             }

@@ -24,10 +24,12 @@ class Task {
 
     bool operator==(const State& other) { return is(other); }
 
-    bool is(int state) { return internal_ == state; }
+    bool isS0() { return internal_ == 0; }
+    bool isS1() { return internal_ == 1; }
+    bool isS2() { return internal_ == 2; }
+    bool isS3() { return internal_ == 3; }
     bool is(const State& other) { return this->internal_ == other.internal_; }
     bool isAfter(int state) { return state > internal_; }
-    bool isInitial() { return internal_ == 0; }
     bool isError() { return internal_ < -1; }
     bool isFinished() { return internal_ == -1; }
     bool isNotFinished() { return internal_ >= 0; }
@@ -55,7 +57,7 @@ class RunOnce : public Task {
     if (state_.isFinished()) {
       return state_;
     }
-    if (state_.isInitial()) {
+    if (state_.isS0()) {
       func_(l);
       state_.setFinished();
       return state_;
@@ -169,6 +171,7 @@ class TcpClientTask : public Task {
 
   uv_tcp_t client;
   std::string need_send_;
+  std::string response_;
   std::function<void(std::string response)> call_back_;
 };
 

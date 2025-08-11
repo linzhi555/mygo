@@ -7,7 +7,7 @@
 namespace mygo {
 
 Task::State TimerTask::run(Loop* loop) {
-  if (state_.isInitial()) {
+  if (state_.isS0()) {
     uv_timer_init(loop->uv_loop_, &this->uv_timer_);
     uv_timer_.data = &this->timeout_;
 
