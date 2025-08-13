@@ -1,11 +1,11 @@
 #pragma once
+#include <array>
 #include <cstdint>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
 namespace mygo {
-enum class Op : uint16_t {
+enum class Op : uint32_t {
   Call,
   Push,
   Return,
@@ -22,28 +22,46 @@ enum class Op : uint16_t {
 
 struct Instruction {
   Op op;
+  uint64_t arg0;
+  uint64_t arg1;
+  uint64_t arg3;
 };
 
 struct Program {
-  std::string name;
-  std::vector<Instruction> instructions;
+  std::string name = "a.myout";
+
   std::vector<uint8_t> data_zone;
+  std::vector<Instruction> instructions;
+
+  void Save(std::string _) {}
+  void Load(std::string _) {}
 };
 
 class ByteCodeVM {
  public:
-  ByteCodeVM(std::unique_ptr<Program> program)
-      : program_(std::move(program)) {};
-  void Run(int ticks) {
-    for (int i = 0; i < ticks; i++) {
-      if (pc >= program_->instructions.size()) break;
-      Instruction& ins = program_->instructions.at(pc + i);
-      std::cout << "run" << (uint16_t)ins.op << std::endl;
-    }
-  }
+  ByteCodeVM(std::unique_ptr<Program> program) : program_(std::move(program)) {
+    Init();
+  };
 
-  size_t pc;
+  ~ByteCodeVM();
+
+  void Run(int ticks);
+  // program counter
+  uint64_t pc = 0;
+  // stacktop
+  uint64_t sp = 0;
+
+  std::array<uint64_t, 10> registers_{{0}};
+
+ private:
+  void Init();
   std::unique_ptr<Program> program_;
+
+  const uint64_t MAX_HEAP = 1000 * 1000 * 1000;
+  const uint64_t MAX_STACK = 1000 * 1000 * 8;
+
+  uint8_t* heap_;
+  uint8_t* stack_;
 };
 
 }  // namespace mygo
