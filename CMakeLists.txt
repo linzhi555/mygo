@@ -37,6 +37,7 @@ set( LIB_SOURCES
         ./src/ast.cpp
         ./src/value.cpp
         ./src/frame.cpp
+        ./src/bytecode.cpp
 )
 
 add_library(mygodev STATIC ${LIB_SOURCES})
@@ -66,6 +67,10 @@ target_link_libraries(test_if GTest::gtest_main mygodev)
 
 add_executable(test_for test/test_for.cpp)
 target_link_libraries(test_for GTest::gtest_main mygodev)
+
+add_executable(test_bytevm test/test_bytevm.cpp)
+target_link_libraries(test_bytevm GTest::gtest_main mygodev)
+
 
 #add_executable(mygo ${PROJECT_SOURCES})
 #add_executable(test_all ${TEST_SOURCES})

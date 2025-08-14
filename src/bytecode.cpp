@@ -1,8 +1,9 @@
 #include "bytecode.h"
 
+#include <cassert>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
-#include <iostream>
 
 namespace mygo {
 
@@ -24,8 +25,25 @@ ByteCodeVM::~ByteCodeVM() {
 void ByteCodeVM::Run(int ticks) {
   for (int i = 0; i < ticks; i++) {
     if (pc >= program_->instructions.size()) break;
-    Instruction& ins = program_->instructions.at(pc + i);
-    std::cout << "run" << (uint16_t)ins.op << std::endl;
+    Instruction& ins = program_->instructions.at(pc);
+
+    switch (ins.op) {
+      case Op::Push:
+        stack_[sp] = ins.arg0;
+        sp++;
+        break;
+
+      case Op::Call:
+        for (uint64_t i = 0; i < sp; i++) {
+          printf("%d ", stack_[i]);
+        }
+        break;
+      default:
+        printf("ERROR op is %d \n", (int)ins.op);
+        assert("not implement op for this op" && false);
+    }
+
+    pc++;
   }
 }
 
