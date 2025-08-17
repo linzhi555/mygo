@@ -5,10 +5,13 @@
 #include "bytecode.h"
 TEST(ByteVM, run) {
   auto program = std::make_unique<mygo::Program>();
-  program->instructions.push_back({mygo::Op::Push8, 0, 0, 0});
-  program->instructions.push_back({mygo::Op::Push8, 255, 0, 0});
+  program->instructions.push_back({mygo::Op::Push8, 16, 0, 0});
+  program->instructions.push_back({mygo::Op::Push8, 250, 0, 0});
   program->instructions.push_back({mygo::Op::Push8, 3, 0, 0});
-  program->instructions.push_back({mygo::Op::Push8, 10, 0, 0});
+  program->instructions.push_back({mygo::Op::Push8, 5, 0, 0});
+  program->instructions.push_back({mygo::Op::AddI8I, 3, 2, 3});
+  program->instructions.push_back({mygo::Op::AddI8I, 1, 1, 0});
+
   program->instructions.push_back({mygo::Op::Push32, 564687, 0, 0});
   program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_U8, 0, 0});
   program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_U8, 1, 0});

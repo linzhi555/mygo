@@ -34,14 +34,27 @@ void ByteCodeVM::Run(int ticks) {
 
     switch (ins.op) {
       case Op::Push8: {
-        *(uint8_t*)(&stack_[sp_]) = (uint8_t)ins.arg0;
+        *(uint8_t*)baseOffset(sp_) = (uint8_t)ins.arg0;
         sp_ += 1;
         break;
       }
 
       case Op::Push32: {
-        *(uint32_t*)(&stack_[sp_]) = ins.arg0;
+        *(uint32_t*)baseOffset(sp_) = ins.arg0;
         sp_ += 4;
+        break;
+      }
+
+      case Op::AddI32I: {
+        *(uint32_t*)baseOffset(ins.arg0) =
+            *(uint32_t*)baseOffset(ins.arg1) + *(uint32_t*)baseOffset(ins.arg2);
+
+        break;
+      }
+
+      case Op::AddI8I: {
+        *(uint8_t*)baseOffset(ins.arg0) =
+            *(uint8_t*)baseOffset(ins.arg1) + *(uint8_t*)baseOffset(ins.arg2);
         break;
       }
 

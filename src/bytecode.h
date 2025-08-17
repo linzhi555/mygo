@@ -17,7 +17,8 @@ enum class Op : uint32_t {
   Call,
   Push8,
   Push32,
-  AddI32,
+  AddI32I,
+  AddI8I,
   AddF32,
   Return,
   Jump,
@@ -35,7 +36,7 @@ struct Instruction {
   Op op;
   uint64_t arg0;
   uint64_t arg1;
-  uint64_t arg3;
+  uint64_t arg2;
 };
 
 struct Program {
