@@ -1,19 +1,22 @@
 #pragma once
 #include <array>
 #include <cstdint>
+#include <cstdio>
 #include <memory>
 #include <string>
 #include <vector>
 namespace mygo {
 
 enum SYSCALL : uint32_t {
-  SC_PRINT_I32 = 1000,
+  SC_PRINT_U8 = 1000,
+  SC_PRINT_U32,
   SC_PRINT_STR,
 };
 
 enum class Op : uint32_t {
   Call,
-  Push,
+  Push8,
+  Push32,
   Return,
   Jump,
   SetI,
@@ -53,9 +56,9 @@ class ByteCodeVM {
 
   void Run(int ticks);
   // program counter
-  uint64_t pc = 0;
+  uint64_t pc_ = 0;
   // stacktop
-  uint64_t sp = 0;
+  uint64_t sp_ = 0;
 
   std::array<uint64_t, 10> registers_{{0}};
 
@@ -79,6 +82,18 @@ class ByteCodeVM {
 
   inline void* romOffset(uint64_t offset) {
     return transAddress(rom_start_ + offset);
+  }
+
+  void DebugStack() {
+    for (uint64_t i = 0; i < sp_; i++) {
+      printf("%3d ", stack_[i]);
+    }
+    printf("\n");
+
+    for (uint64_t i = 0; i < sp_ && i < 255; i++) {
+      printf("%3d ", (int)i);
+    }
+    printf("\n");
   }
 
  private:

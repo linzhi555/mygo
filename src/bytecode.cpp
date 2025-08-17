@@ -28,18 +28,27 @@ ByteCodeVM::~ByteCodeVM() {
 
 void ByteCodeVM::Run(int ticks) {
   for (int i = 0; i < ticks; i++) {
-    if (pc >= program_->instructions.size()) break;
-    Instruction& ins = program_->instructions.at(pc);
+    if (pc_ >= program_->instructions.size()) break;
+    Instruction& ins = program_->instructions.at(pc_);
 
     switch (ins.op) {
-      case Op::Push:
-        stack_[sp] = ins.arg0;
-        sp++;
+      case Op::Push8: {
+        *(uint8_t*)(&stack_[sp_]) = (uint8_t)ins.arg0;
+        sp_ += 1;
         break;
+      }
+
+      case Op::Push32: {
+        *(uint32_t*)(&stack_[sp_]) = ins.arg0;
+        sp_ += 4;
+        break;
+      }
 
       case Op::Call:
-        if (ins.arg0 == SC_PRINT_I32) {
-          printf("%d\n", stack_[ins.arg1]);
+        if (ins.arg0 == SC_PRINT_U32) {
+          printf("%d\n", *(uint32_t*)(&stack_[ins.arg1]));
+        } else if (ins.arg0 == SC_PRINT_U8) {
+          printf("%d\n", *(uint8_t*)(&stack_[ins.arg1]));
         } else if (ins.arg0 == SC_PRINT_STR) {
           printf("%s\n", (char*)&stack_[ins.arg1]);
         }
@@ -48,9 +57,10 @@ void ByteCodeVM::Run(int ticks) {
       default:
         printf("ERROR op is %d \n", (int)ins.op);
         assert("not implement op for this op" && false);
+        break;
     }
 
-    pc++;
+    pc_++;
   }
 }
 
