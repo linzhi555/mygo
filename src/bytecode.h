@@ -17,6 +17,8 @@ enum class Op : uint32_t {
   Call,
   Push8,
   Push32,
+  AddI32,
+  AddF32,
   Return,
   Jump,
   SetI,
@@ -62,27 +64,33 @@ class ByteCodeVM {
 
   std::array<uint64_t, 10> registers_{{0}};
 
-  inline void* transAddress(uint64_t address) {
-    if (address >= heap_start_) {
-      return &heap_[address];
-    } else if (address >= stack_start_) {
-      return &stack_[address];
+  inline void* transAddress(uint64_t absolute) {
+    if (absolute >= heap_start_) {
+      return &heap_[absolute];
+    } else if (absolute >= stack_start_) {
+      return &stack_[absolute];
     } else {
-      return &program_->rom[address];
+      return &program_->rom[absolute];
     }
   }
 
-  inline void* heapOffset(uint64_t offset) {
-    return transAddress(heap_start_ + offset);
+  inline uint64_t toAbsolute(uint64_t offset) { return base_addr_ + offset; }
+
+  inline void* baseOffset(uint64_t offset) {
+    return transAddress(toAbsolute(offset));
   }
 
-  inline void* stackOffset(uint64_t offset) {
-    return transAddress(stack_start_ + offset);
-  }
+  // inline void* heapOffset(uint64_t offset) {
+  //   return transAddress(heap_start_ + offset);
+  // }
 
-  inline void* romOffset(uint64_t offset) {
-    return transAddress(rom_start_ + offset);
-  }
+  // inline void* stackOffset(uint64_t offset) {
+  //   return transAddress(stack_start_ + offset);
+  // }
+
+  // inline void* romOffset(uint64_t offset) {
+  //   return transAddress(rom_start_ + offset);
+  // }
 
   void DebugStack() {
     for (uint64_t i = 0; i < sp_; i++) {
@@ -96,6 +104,8 @@ class ByteCodeVM {
     printf("\n");
   }
 
+  uint64_t stack_start() { return stack_start_; }
+
  private:
   void Init();
   std::unique_ptr<Program> program_;
@@ -106,6 +116,7 @@ class ByteCodeVM {
   uint64_t stack_start_;
   uint64_t heap_start_;
   uint64_t rom_start_ = 0;
+  uint64_t base_addr_;
 
   uint8_t* heap_;
   uint8_t* stack_;

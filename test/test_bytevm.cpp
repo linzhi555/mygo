@@ -19,7 +19,7 @@ TEST(ByteVM, run) {
 
   mygo::ByteCodeVM vm(std::move(program));
 
-  snprintf((char*)vm.stackOffset(100), 20, "helloworld");
+  snprintf((char*)vm.transAddress(vm.stack_start() + 100), 20, "helloworld");
   vm.Run(100);
 
   vm.DebugStack();
