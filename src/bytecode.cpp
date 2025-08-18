@@ -33,31 +33,6 @@ void ByteCodeVM::Run(int ticks) {
     Instruction& ins = program_->instructions.at(pc_);
 
     switch (ins.op) {
-      case Op::Push8: {
-        *(uint8_t*)baseOffset(sp_) = (uint8_t)ins.arg0;
-        sp_ += 1;
-        break;
-      }
-
-      case Op::Push32: {
-        *(uint32_t*)baseOffset(sp_) = ins.arg0;
-        sp_ += 4;
-        break;
-      }
-
-      case Op::AddI32I: {
-        *(uint32_t*)baseOffset(ins.arg0) =
-            *(uint32_t*)baseOffset(ins.arg1) + *(uint32_t*)baseOffset(ins.arg2);
-
-        break;
-      }
-
-      case Op::AddI8I: {
-        *(uint8_t*)baseOffset(ins.arg0) =
-            *(uint8_t*)baseOffset(ins.arg1) + *(uint8_t*)baseOffset(ins.arg2);
-        break;
-      }
-
       case Op::Call:
         if (ins.arg0 == SC_PRINT_U32) {
           printf("%d\n", *(uint32_t*)(baseOffset(ins.arg1)));
@@ -67,14 +42,64 @@ void ByteCodeVM::Run(int ticks) {
           printf("%s\n", (char*)(baseOffset(ins.arg1)));
         }
 
+        pc_++;
         break;
+
+      case Op::Push8: {
+        *(uint8_t*)baseOffset(sp_) = (uint8_t)ins.arg0;
+        sp_ += 1;
+        pc_++;
+        break;
+      }
+
+      case Op::Push32: {
+        *(uint32_t*)baseOffset(sp_) = ins.arg0;
+        sp_ += 4;
+        pc_++;
+        break;
+      }
+
+      case Op::Push64: {
+        *(uint64_t*)baseOffset(sp_) = ins.arg0;
+        sp_ += 8;
+        pc_++;
+        break;
+      }
+
+      case Op::AddI32I: {
+        *(uint32_t*)baseOffset(ins.arg0) =
+            *(uint32_t*)baseOffset(ins.arg1) + *(uint32_t*)baseOffset(ins.arg2);
+        pc_++;
+        break;
+      }
+
+      case Op::AddI8I: {
+        *(uint8_t*)baseOffset(ins.arg0) =
+            *(uint8_t*)baseOffset(ins.arg1) + *(uint8_t*)baseOffset(ins.arg2);
+        pc_++;
+        break;
+      }
+
+      case Op::SavePC: {
+        *(uint64_t*)baseOffset(ins.arg0) = pc_ + 1;
+        pc_++;
+        break;
+      }
+
+      case Op::JumpZero8: {
+        if (*(uint8_t*)baseOffset(ins.arg0) == 0) {
+          pc_ = *(uint64_t*)baseOffset(ins.arg1);
+        } else {
+          pc_++;
+        }
+        break;
+      }
+
       default:
         printf("ERROR op is %d \n", (int)ins.op);
         assert("not implement op for this op" && false);
         break;
     }
-
-    pc_++;
   }
 }
 
