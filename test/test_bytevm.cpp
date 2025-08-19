@@ -7,15 +7,17 @@ TEST(ByteVM, run) {
   auto program = std::make_unique<mygo::Program>();
 
   // condition variable
-  program->instructions.push_back({mygo::Op::Push8, 0, 0, 0});
+  program->instructions.push_back({mygo::Op::Set8, 0, 0, 0});
 
-  program->instructions.push_back({mygo::Op::Push8, 0, 0, 0});
-  program->instructions.push_back({mygo::Op::Push8, 1, 0, 0});
-  program->instructions.push_back({mygo::Op::Push8, 0, 0, 0});
+  program->instructions.push_back({mygo::Op::Set8, 1, 0, 0});
+  program->instructions.push_back({mygo::Op::Set8, 2, 1, 0});
+  program->instructions.push_back({mygo::Op::Set8, 3, 0, 0});
 
-  program->instructions.push_back({mygo::Op::Push32, 564687, 0, 0});
+  program->instructions.push_back({mygo::Op::Set32, 4, 564687, 0});
 
-  program->instructions.push_back({mygo::Op::Push64, 0, 0, 0});
+  program->instructions.push_back({mygo::Op::Set64, 8, 0, 0});
+
+  program->instructions.push_back({mygo::Op::SetSP, 16, 0, 0});
 
   program->instructions.push_back({mygo::Op::SavePC, 8, 0, 0});
   program->instructions.push_back({mygo::Op::AddI8I, 3, 2, 3});

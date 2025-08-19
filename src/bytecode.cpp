@@ -45,23 +45,25 @@ void ByteCodeVM::Run(int ticks) {
         pc_++;
         break;
 
-      case Op::Push8: {
-        *(uint8_t*)baseOffset(sp_) = (uint8_t)ins.arg0;
-        sp_ += 1;
+      case Op::Set8: {
+        *(uint8_t*)baseOffset(ins.arg0) = (uint8_t)ins.arg1;
         pc_++;
         break;
       }
 
-      case Op::Push32: {
-        *(uint32_t*)baseOffset(sp_) = ins.arg0;
-        sp_ += 4;
+      case Op::Set32: {
+        *(uint32_t*)baseOffset(ins.arg0) = (uint32_t)ins.arg1;
         pc_++;
         break;
       }
 
-      case Op::Push64: {
-        *(uint64_t*)baseOffset(sp_) = ins.arg0;
-        sp_ += 8;
+      case Op::Set64: {
+        *(uint64_t*)baseOffset(ins.arg0) = ins.arg1;
+        pc_++;
+        break;
+      }
+      case Op::SetSP: {
+        sp_ = ins.arg0;
         pc_++;
         break;
       }

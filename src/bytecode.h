@@ -15,9 +15,10 @@ enum SYSCALL : uint32_t {
 
 enum class Op : uint32_t {
   Call,
-  Push8,
-  Push32,
-  Push64,
+  Set8,
+  Set32,
+  Set64,
+  SetSP,
   AddI32I,
   AddI8I,
   AddF32,
