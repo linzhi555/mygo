@@ -68,14 +68,14 @@ void ByteCodeVM::Run(int ticks) {
         break;
       }
 
-      case Op::AddI32I: {
+      case Op::AddI32: {
         *(uint32_t*)baseOffset(ins.arg0) =
             *(uint32_t*)baseOffset(ins.arg1) + *(uint32_t*)baseOffset(ins.arg2);
         pc_++;
         break;
       }
 
-      case Op::AddI8I: {
+      case Op::AddI8: {
         *(uint8_t*)baseOffset(ins.arg0) =
             *(uint8_t*)baseOffset(ins.arg1) + *(uint8_t*)baseOffset(ins.arg2);
         pc_++;
@@ -88,9 +88,12 @@ void ByteCodeVM::Run(int ticks) {
         break;
       }
 
-      case Op::JumpZero8: {
-        if (*(uint8_t*)baseOffset(ins.arg0) == 0) {
-          pc_ = *(uint64_t*)baseOffset(ins.arg1);
+      case Op::JumpGtI8: {
+        uint8_t a = *(uint8_t*)baseOffset(ins.arg0);
+        uint8_t b = *(uint8_t*)baseOffset(ins.arg1);
+
+        if (a > b) {
+          pc_ = *(uint64_t*)baseOffset(ins.arg2);
         } else {
           pc_++;
         }

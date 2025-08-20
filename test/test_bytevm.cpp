@@ -8,8 +8,7 @@ TEST(ByteVM, run) {
 
   // condition variable
   program->instructions.push_back({mygo::Op::Set8, 0, 0, 0});
-
-  program->instructions.push_back({mygo::Op::Set8, 1, 0, 0});
+  program->instructions.push_back({mygo::Op::Set8, 1, 5, 0});
   program->instructions.push_back({mygo::Op::Set8, 2, 1, 0});
   program->instructions.push_back({mygo::Op::Set8, 3, 0, 0});
 
@@ -20,14 +19,14 @@ TEST(ByteVM, run) {
   program->instructions.push_back({mygo::Op::SetSP, 16, 0, 0});
 
   program->instructions.push_back({mygo::Op::SavePC, 8, 0, 0});
-  program->instructions.push_back({mygo::Op::AddI8I, 3, 2, 3});
+  program->instructions.push_back({mygo::Op::AddI8, 3, 2, 3});
   program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_U8, 0, 0});
   program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_U8, 1, 0});
   program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_U8, 2, 0});
   program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_U8, 3, 0});
   program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_U32, 4, 0});
   program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_STR, 100, 0});
-  program->instructions.push_back({mygo::Op::JumpZero8, 0, 8, 0});
+  program->instructions.push_back({mygo::Op::JumpGtI8, 1, 3, 8});
 
   mygo::ByteCodeVM vm(std::move(program));
 

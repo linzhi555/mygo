@@ -14,27 +14,45 @@ enum SYSCALL : uint32_t {
 };
 
 enum class Op : uint32_t {
-  Call,
   Set8,
   Set32,
   Set64,
   SetSP,
-  AddI32I,
-  AddI8I,
+
+  // set 0x0000000 as base address
+  BaseZero,
+
+  // set stack top address as base address
+  BaseStack,
+
+  AddI8,
+  AddI32,
+  AddI64,
   AddF32,
+  AddF64,
+
+  AddI8D,
+  AddI32D,
+  AddI64D,
+  AddF32D,
+  AddF64D,
+
   SavePC,
-  LoadPC,
+  Call,
   Return,
+
   Jump,
-  JumpZero8,
-  SetI,
-  SetF,
-  SetS,
-  Add,
-  Sub,
-  Mul,
-  JumpEqual,
-  JumpTrue,
+  JumpGtI8,
+  JumpGtI32,
+  JumpGtI64,
+
+  JumpGtF32,
+  JumpGtF64,
+
+  JumpEqI8,
+  JumpEqI32,
+  JumpEqI64,
+
 };
 
 struct Instruction {
