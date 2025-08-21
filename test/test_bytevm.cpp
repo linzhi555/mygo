@@ -12,7 +12,7 @@ TEST(ByteVM, run) {
   program->instructions.push_back({mygo::Op::Set8, 2, 1, 0});
   program->instructions.push_back({mygo::Op::Set8, 3, 0, 0});
 
-  program->instructions.push_back({mygo::Op::Set32, 4, 564687, 0});
+  program->instructions.push_back({mygo::Op::Set32, 4, mygo::f32u64(3.0), 0});
 
   program->instructions.push_back({mygo::Op::Set64, 8, 0, 0});
 
@@ -20,11 +20,12 @@ TEST(ByteVM, run) {
 
   program->instructions.push_back({mygo::Op::SavePC, 8, 0, 0});
   program->instructions.push_back({mygo::Op::AddI8, 3, 2, 3});
-  program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_U8, 0, 0});
-  program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_U8, 1, 0});
-  program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_U8, 2, 0});
-  program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_U8, 3, 0});
-  program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_U32, 4, 0});
+  program->instructions.push_back({mygo::Op::AddF32D, 4, mygo::f32u64(3.0), 0});
+  program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_I8, 0, 0});
+  program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_I8, 1, 0});
+  program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_I8, 2, 0});
+  program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_I8, 3, 0});
+  program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_F32, 4, 0});
   program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_STR, 100, 0});
   program->instructions.push_back({mygo::Op::JumpGtI8, 1, 3, 8});
 

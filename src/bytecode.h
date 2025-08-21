@@ -8,8 +8,11 @@
 namespace mygo {
 
 enum SYSCALL : uint32_t {
-  SC_PRINT_U8 = 1000,
-  SC_PRINT_U32,
+  SC_PRINT_I8 = 1000,
+  SC_PRINT_I32,
+  SC_PRINT_I64,
+  SC_PRINT_F32,
+  SC_PRINT_F64,
   SC_PRINT_STR,
 };
 
@@ -72,6 +75,12 @@ struct Program {
   void Load(std::string _) {}
 };
 
+inline uint64_t f32u64(float f) {
+  uint64_t res = 0;
+  res = *(uint64_t*)(&f);
+  return res;
+}
+
 class ByteCodeVM {
  public:
   ByteCodeVM(std::unique_ptr<Program> program) : program_(std::move(program)) {
@@ -103,18 +112,6 @@ class ByteCodeVM {
   inline void* baseOffset(uint64_t offset) {
     return transAddress(toAbsolute(offset));
   }
-
-  // inline void* heapOffset(uint64_t offset) {
-  //   return transAddress(heap_start_ + offset);
-  // }
-
-  // inline void* stackOffset(uint64_t offset) {
-  //   return transAddress(stack_start_ + offset);
-  // }
-
-  // inline void* romOffset(uint64_t offset) {
-  //   return transAddress(rom_start_ + offset);
-  // }
 
   void DebugStack() {
     for (uint64_t i = 0; i < sp_; i++) {

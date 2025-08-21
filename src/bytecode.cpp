@@ -33,18 +33,6 @@ void ByteCodeVM::Run(int ticks) {
     Instruction& ins = program_->instructions.at(pc_);
 
     switch (ins.op) {
-      case Op::Call:
-        if (ins.arg0 == SC_PRINT_U32) {
-          printf("%d\n", *(uint32_t*)(baseOffset(ins.arg1)));
-        } else if (ins.arg0 == SC_PRINT_U8) {
-          printf("%d\n", *(uint8_t*)(baseOffset(ins.arg1)));
-        } else if (ins.arg0 == SC_PRINT_STR) {
-          printf("%s\n", (char*)(baseOffset(ins.arg1)));
-        }
-
-        pc_++;
-        break;
-
       case Op::Set8: {
         *(uint8_t*)baseOffset(ins.arg0) = (uint8_t)ins.arg1;
         pc_++;
@@ -68,6 +56,13 @@ void ByteCodeVM::Run(int ticks) {
         break;
       }
 
+      case Op::AddI8: {
+        *(uint8_t*)baseOffset(ins.arg0) =
+            *(uint8_t*)baseOffset(ins.arg1) + *(uint8_t*)baseOffset(ins.arg2);
+        pc_++;
+        break;
+      }
+
       case Op::AddI32: {
         *(uint32_t*)baseOffset(ins.arg0) =
             *(uint32_t*)baseOffset(ins.arg1) + *(uint32_t*)baseOffset(ins.arg2);
@@ -75,9 +70,53 @@ void ByteCodeVM::Run(int ticks) {
         break;
       }
 
-      case Op::AddI8: {
-        *(uint8_t*)baseOffset(ins.arg0) =
-            *(uint8_t*)baseOffset(ins.arg1) + *(uint8_t*)baseOffset(ins.arg2);
+      case Op::AddI64: {
+        *(uint64_t*)baseOffset(ins.arg0) =
+            *(uint64_t*)baseOffset(ins.arg1) + *(uint64_t*)baseOffset(ins.arg2);
+        pc_++;
+        break;
+      }
+
+      case Op::AddF32: {
+        *(float*)baseOffset(ins.arg0) =
+            *(float*)baseOffset(ins.arg1) + *(float*)baseOffset(ins.arg2);
+        pc_++;
+        break;
+      }
+
+      case Op::AddF64: {
+        *(double*)baseOffset(ins.arg0) =
+            *(double*)baseOffset(ins.arg1) + *(double*)baseOffset(ins.arg2);
+        pc_++;
+        break;
+      }
+
+      case Op::AddI8D: {
+        *(uint8_t*)baseOffset(ins.arg0) += *(uint8_t*)(&ins.arg1);
+        pc_++;
+        break;
+      }
+
+      case Op::AddI32D: {
+        *(uint32_t*)baseOffset(ins.arg0) += *(uint32_t*)(&ins.arg1);
+        pc_++;
+        break;
+      }
+
+      case Op::AddI64D: {
+        *(uint64_t*)baseOffset(ins.arg0) += *(uint64_t*)(&ins.arg1);
+        pc_++;
+        break;
+      }
+
+      case Op::AddF32D: {
+        *(float*)baseOffset(ins.arg0) += *(float*)(&ins.arg1);
+        pc_++;
+        break;
+      }
+
+      case Op::AddF64D: {
+        *(double*)baseOffset(ins.arg0) += *(double*)(&ins.arg1);
         pc_++;
         break;
       }
@@ -87,6 +126,35 @@ void ByteCodeVM::Run(int ticks) {
         pc_++;
         break;
       }
+
+      case Op::Call:
+
+        if (ins.arg0 == SC_PRINT_I8) {
+          printf("%d\n", *(uint8_t*)(baseOffset(ins.arg1)));
+        }
+
+        else if (ins.arg0 == SC_PRINT_I32) {
+          printf("%d\n", *(uint32_t*)(baseOffset(ins.arg1)));
+        }
+
+        else if (ins.arg0 == SC_PRINT_I64) {
+          printf("%ld\n", *(uint64_t*)(baseOffset(ins.arg1)));
+        }
+
+        else if (ins.arg0 == SC_PRINT_F32) {
+          printf("%f\n", *(float*)(baseOffset(ins.arg1)));
+        }
+
+        else if (ins.arg0 == SC_PRINT_F64) {
+          printf("%f\n", *(double*)(baseOffset(ins.arg1)));
+        }
+
+        else if (ins.arg0 == SC_PRINT_STR) {
+          printf("%s\n", (char*)(baseOffset(ins.arg1)));
+        }
+
+        pc_++;
+        break;
 
       case Op::JumpGtI8: {
         uint8_t a = *(uint8_t*)baseOffset(ins.arg0);
