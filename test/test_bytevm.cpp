@@ -20,7 +20,8 @@ TEST(ByteVM, run) {
 
   program->instructions.push_back({mygo::Op::SavePC, 8, 0, 0});
   program->instructions.push_back({mygo::Op::AddI8, 3, 2, 3});
-  program->instructions.push_back({mygo::Op::AddF32D, 4, mygo::f32u64(3.0), 0});
+  program->instructions.push_back({mygo::Op::MulF32D, 4, mygo::f32u64(2.0), 0});
+  program->instructions.push_back({mygo::Op::AddF32D, 4, mygo::f32u64(1.0), 0});
   program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_I8, 0, 0});
   program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_I8, 1, 0});
   program->instructions.push_back({mygo::Op::Call, mygo::SC_PRINT_I8, 2, 0});

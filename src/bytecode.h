@@ -16,29 +16,49 @@ enum SYSCALL : uint32_t {
   SC_PRINT_STR,
 };
 
+// clang-format off
+#define BinarInstList(OP1,OP2) \
+  OP1(I8,uint8_t) \
+  OP1(I32,uint32_t)\
+  OP1(I64, uint64_t)\
+  OP1(F32,float)\
+  OP1(F64,double)\
+  OP2(I8D,uint8_t) \
+  OP2(I32D,uint32_t)\
+  OP2(I64D, uint64_t)\
+  OP2(F32D,float)\
+  OP2(F64D,double)
+
+// clang-format on
+
 enum class Op : uint32_t {
   Set8,
   Set32,
   Set64,
   SetSP,
-
   // set 0x0000000 as base address
   BaseZero,
 
   // set stack top address as base address
   BaseStack,
 
-  AddI8,
-  AddI32,
-  AddI64,
-  AddF32,
-  AddF64,
+// clang-format off
+#define ADD(INS_TYPE, C_TYPE) Add##INS_TYPE ,
+#define SUB(INS_TYPE, C_TYPE) Sub##INS_TYPE ,
+#define MUL(INS_TYPE, C_TYPE) Mul##INS_TYPE ,
+#define DIV(INS_TYPE, C_TYPE) Div##INS_TYPE ,
 
-  AddI8D,
-  AddI32D,
-  AddI64D,
-  AddF32D,
-  AddF64D,
+  BinarInstList(ADD, ADD)
+  BinarInstList(SUB, SUB) 
+  BinarInstList(MUL, MUL)
+  BinarInstList(DIV, DIV)
+
+#undef ADD
+#undef SUB
+#undef MUL
+#undef DIV
+  // clang-format on
+  //
 
   SavePC,
   Call,

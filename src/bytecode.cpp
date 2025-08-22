@@ -55,71 +55,52 @@ void ByteCodeVM::Run(int ticks) {
         pc_++;
         break;
       }
+      // clang-format off
+#define CASE1(OPNAME,OP,INS_TYPE, C_TYPE)                                            \
+  case Op::OPNAME##INS_TYPE: {                                              \
+    *(C_TYPE*)baseOffset(ins.arg0) =                                     \
+        *(C_TYPE*)baseOffset(ins.arg1) OP *(C_TYPE*)baseOffset(ins.arg2); \
+    pc_++;                                                               \
+    break;                                                               \
+  }
 
-      case Op::AddI8: {
-        *(uint8_t*)baseOffset(ins.arg0) =
-            *(uint8_t*)baseOffset(ins.arg1) + *(uint8_t*)baseOffset(ins.arg2);
-        pc_++;
-        break;
-      }
 
-      case Op::AddI32: {
-        *(uint32_t*)baseOffset(ins.arg0) =
-            *(uint32_t*)baseOffset(ins.arg1) + *(uint32_t*)baseOffset(ins.arg2);
-        pc_++;
-        break;
-      }
+#define CASE2(OPNAME,OP,INS_TYPE, C_TYPE)                               \
+  case Op::OPNAME##INS_TYPE: {                               \
+    *(C_TYPE*)baseOffset(ins.arg0) OP##= *(C_TYPE*)(&ins.arg1); \
+    pc_++;                                                   \
+    break;                                                   \
+  }
 
-      case Op::AddI64: {
-        *(uint64_t*)baseOffset(ins.arg0) =
-            *(uint64_t*)baseOffset(ins.arg1) + *(uint64_t*)baseOffset(ins.arg2);
-        pc_++;
-        break;
-      }
+      #define OP1(INS_TYPE,C_TYPE) CASE1(Add,+,INS_TYPE,C_TYPE)
+      #define OP2(INS_TYPE,C_TYPE) CASE2(Add,+,INS_TYPE,C_TYPE)
+      BinarInstList(OP1,OP2)
+      #undef OP1
+      #undef OP2
 
-      case Op::AddF32: {
-        *(float*)baseOffset(ins.arg0) =
-            *(float*)baseOffset(ins.arg1) + *(float*)baseOffset(ins.arg2);
-        pc_++;
-        break;
-      }
+      #define OP1(INS_TYPE,C_TYPE) CASE1(Sub,-,INS_TYPE,C_TYPE)
+      #define OP2(INS_TYPE,C_TYPE) CASE2(Sub,-,INS_TYPE,C_TYPE)
+      BinarInstList(OP1,OP2)
+      #undef OP1
+      #undef OP2
 
-      case Op::AddF64: {
-        *(double*)baseOffset(ins.arg0) =
-            *(double*)baseOffset(ins.arg1) + *(double*)baseOffset(ins.arg2);
-        pc_++;
-        break;
-      }
 
-      case Op::AddI8D: {
-        *(uint8_t*)baseOffset(ins.arg0) += *(uint8_t*)(&ins.arg1);
-        pc_++;
-        break;
-      }
+      #define OP1(INS_TYPE,C_TYPE) CASE1(Mul,*,INS_TYPE,C_TYPE)
+      #define OP2(INS_TYPE,C_TYPE) CASE2(Mul,*,INS_TYPE,C_TYPE)
+      BinarInstList(OP1,OP2)
+      #undef OP1
+      #undef OP2
 
-      case Op::AddI32D: {
-        *(uint32_t*)baseOffset(ins.arg0) += *(uint32_t*)(&ins.arg1);
-        pc_++;
-        break;
-      }
+      #define OP1(INS_TYPE,C_TYPE) CASE1(Div,/,INS_TYPE,C_TYPE)
+      #define OP2(INS_TYPE,C_TYPE) CASE2(Div,/,INS_TYPE,C_TYPE)
+      BinarInstList(OP1,OP2)
+      #undef OP1
+      #undef OP2
 
-      case Op::AddI64D: {
-        *(uint64_t*)baseOffset(ins.arg0) += *(uint64_t*)(&ins.arg1);
-        pc_++;
-        break;
-      }
 
-      case Op::AddF32D: {
-        *(float*)baseOffset(ins.arg0) += *(float*)(&ins.arg1);
-        pc_++;
-        break;
-      }
 
-      case Op::AddF64D: {
-        *(double*)baseOffset(ins.arg0) += *(double*)(&ins.arg1);
-        pc_++;
-        break;
-      }
+#undef CASE1
+#undef CASE2
 
       case Op::SavePC: {
         *(uint64_t*)baseOffset(ins.arg0) = pc_ + 1;
@@ -127,6 +108,7 @@ void ByteCodeVM::Run(int ticks) {
         break;
       }
 
+        // clang-format on
       case Op::Call:
 
         if (ins.arg0 == SC_PRINT_I8) {
@@ -174,6 +156,6 @@ void ByteCodeVM::Run(int ticks) {
         break;
     }
   }
-}
+}  // namespace mygo
 
 }  // namespace mygo
