@@ -91,6 +91,8 @@ struct Program {
   std::vector<uint8_t> rom;
   std::vector<Instruction> instructions;
 
+  void AddInstruction(Instruction insc) { instructions.push_back(insc); }
+
   void Save(std::string _) {}
   void Load(std::string _) {}
 };
