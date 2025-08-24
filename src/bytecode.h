@@ -17,17 +17,12 @@ enum SYSCALL : uint32_t {
 };
 
 // clang-format off
-#define BinarInstList(OP1,OP2) \
-  OP1(I8,uint8_t) \
-  OP1(I32,uint32_t)\
-  OP1(I64, uint64_t)\
-  OP1(F32,float)\
-  OP1(F64,double)\
-  OP2(I8D,uint8_t) \
-  OP2(I32D,uint32_t)\
-  OP2(I64D, uint64_t)\
-  OP2(F32D,float)\
-  OP2(F64D,double)
+#define BinarInstList(OP) \
+  OP(I8,uint8_t) \
+  OP(I32,uint32_t)\
+  OP(I64, uint64_t)\
+  OP(F32,float)\
+  OP(F64,double)
 
 // clang-format on
 
@@ -44,37 +39,55 @@ enum class Op : uint32_t {
 
 // clang-format off
 #define ADD(INS_TYPE, C_TYPE) Add##INS_TYPE ,
-#define SUB(INS_TYPE, C_TYPE) Sub##INS_TYPE ,
-#define MUL(INS_TYPE, C_TYPE) Mul##INS_TYPE ,
-#define DIV(INS_TYPE, C_TYPE) Div##INS_TYPE ,
-
-  BinarInstList(ADD, ADD)
-  BinarInstList(SUB, SUB) 
-  BinarInstList(MUL, MUL)
-  BinarInstList(DIV, DIV)
-
+  BinarInstList(ADD)
 #undef ADD
+
+#define SUB(INS_TYPE, C_TYPE) Sub##INS_TYPE ,
+  BinarInstList(SUB) 
 #undef SUB
+
+#define MUL(INS_TYPE, C_TYPE) Mul##INS_TYPE ,
+  BinarInstList(MUL)
 #undef MUL
+
+#define DIV(INS_TYPE, C_TYPE) Div##INS_TYPE ,
+  BinarInstList(DIV)
 #undef DIV
+
+#define ADDD(INS_TYPE, C_TYPE) Add##INS_TYPE##D ,
+  BinarInstList(ADDD)
+#undef ADDD
+
+#define SUBD(INS_TYPE, C_TYPE) Sub##INS_TYPE##D ,
+  BinarInstList(SUBD) 
+#undef SUBD
+
+#define MULD(INS_TYPE, C_TYPE) Mul##INS_TYPE##D ,
+  BinarInstList(MULD)
+#undef MULD
+
+#define DIVD(INS_TYPE, C_TYPE) Div##INS_TYPE##D ,
+  BinarInstList(DIVD)
+#undef DIVD
+
+#define JumpGt(INS_TYPE, C_TYPE) JumpGt##INS_TYPE ,
+  BinarInstList(JumpGt)
+#undef JumpGt
+
+#define JumpEq(INS_TYPE, C_TYPE) JumpEq##INS_TYPE ,
+  BinarInstList(JumpEq)
+#undef JumpEq
+
+#define JumpGtEq(INS_TYPE, C_TYPE) JumpGtEq##INS_TYPE ,
+  BinarInstList(JumpGtEq)
+#undef JumpGtEq
+
   // clang-format on
   //
 
   SavePC,
   Call,
   Return,
-
-  Jump,
-  JumpGtI8,
-  JumpGtI32,
-  JumpGtI64,
-
-  JumpGtF32,
-  JumpGtF64,
-
-  JumpEqI8,
-  JumpEqI32,
-  JumpEqI64,
 
 };
 

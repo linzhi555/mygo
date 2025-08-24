@@ -55,52 +55,86 @@ void ByteCodeVM::Run(int ticks) {
         pc_++;
         break;
       }
+
       // clang-format off
-#define CASE1(OPNAME,OP,INS_TYPE, C_TYPE)                                            \
-  case Op::OPNAME##INS_TYPE: {                                              \
-    *(C_TYPE*)baseOffset(ins.arg0) =                                     \
-        *(C_TYPE*)baseOffset(ins.arg1) OP *(C_TYPE*)baseOffset(ins.arg2); \
-    pc_++;                                                               \
-    break;                                                               \
+#define CASE1(OPNAME, OP, INS_TYPE, C_TYPE)                                \
+  case Op::OPNAME##INS_TYPE: {                                             \
+    *(C_TYPE*)baseOffset(ins.arg0) =                                       \
+        *(C_TYPE*)baseOffset(ins.arg1) OP * (C_TYPE*)baseOffset(ins.arg2); \
+    pc_++;                                                                 \
+    break;                                                                 \
   }
 
+#define OP1(INS_TYPE, C_TYPE) CASE1(Add, +, INS_TYPE, C_TYPE)
+    BinarInstList(OP1)
+#undef OP1
 
-#define CASE2(OPNAME,OP,INS_TYPE, C_TYPE)                               \
-  case Op::OPNAME##INS_TYPE: {                               \
-    *(C_TYPE*)baseOffset(ins.arg0) OP##= *(C_TYPE*)(&ins.arg1); \
-    pc_++;                                                   \
-    break;                                                   \
-  }
+#define OP1(INS_TYPE, C_TYPE) CASE1(Sub, -, INS_TYPE, C_TYPE)
+    BinarInstList(OP1)
+#undef OP1
 
-      #define OP1(INS_TYPE,C_TYPE) CASE1(Add,+,INS_TYPE,C_TYPE)
-      #define OP2(INS_TYPE,C_TYPE) CASE2(Add,+,INS_TYPE,C_TYPE)
-      BinarInstList(OP1,OP2)
-      #undef OP1
-      #undef OP2
+#define OP1(INS_TYPE, C_TYPE) CASE1(Mul, *, INS_TYPE, C_TYPE)
+    BinarInstList(OP1)
+#undef OP1
 
-      #define OP1(INS_TYPE,C_TYPE) CASE1(Sub,-,INS_TYPE,C_TYPE)
-      #define OP2(INS_TYPE,C_TYPE) CASE2(Sub,-,INS_TYPE,C_TYPE)
-      BinarInstList(OP1,OP2)
-      #undef OP1
-      #undef OP2
-
-
-      #define OP1(INS_TYPE,C_TYPE) CASE1(Mul,*,INS_TYPE,C_TYPE)
-      #define OP2(INS_TYPE,C_TYPE) CASE2(Mul,*,INS_TYPE,C_TYPE)
-      BinarInstList(OP1,OP2)
-      #undef OP1
-      #undef OP2
-
-      #define OP1(INS_TYPE,C_TYPE) CASE1(Div,/,INS_TYPE,C_TYPE)
-      #define OP2(INS_TYPE,C_TYPE) CASE2(Div,/,INS_TYPE,C_TYPE)
-      BinarInstList(OP1,OP2)
-      #undef OP1
-      #undef OP2
-
-
+#define OP1(INS_TYPE, C_TYPE) CASE1(Div, /, INS_TYPE, C_TYPE)
+    BinarInstList(OP1)
+#undef OP1
 
 #undef CASE1
+
+#define CASE2(OPNAME, OP, INS_TYPE, C_TYPE)                      \
+  case Op::OPNAME##INS_TYPE##D: {                                \
+    *(C_TYPE*)baseOffset(ins.arg0) OP## = *(C_TYPE*)(&ins.arg1); \
+    pc_++;                                                       \
+    break;                                                       \
+  }
+
+#define OP2(INS_TYPE, C_TYPE) CASE2(Add, +, INS_TYPE, C_TYPE)
+    BinarInstList(OP2)
+#undef OP2
+
+#define OP2(INS_TYPE, C_TYPE) CASE2(Sub, -, INS_TYPE, C_TYPE)
+    BinarInstList(OP2)
+#undef OP2
+
+#define OP2(INS_TYPE, C_TYPE) CASE2(Mul, *, INS_TYPE, C_TYPE)
+    BinarInstList(OP2)
+#undef OP2
+
+#define OP2(INS_TYPE, C_TYPE) CASE2(Div, /, INS_TYPE, C_TYPE)
+    BinarInstList(OP2)
+#undef OP2
+
 #undef CASE2
+
+#define CASE3(OPNAME, OP, INS_TYPE, C_TYPE)    \
+  case Op::Jump##OPNAME##INS_TYPE: {           \
+    C_TYPE a = *(C_TYPE*)baseOffset(ins.arg0); \
+    C_TYPE b = *(C_TYPE*)baseOffset(ins.arg1); \
+                                               \
+    if (a OP b) {                              \
+      pc_ = *(uint64_t*)baseOffset(ins.arg2);  \
+    } else {                                   \
+      pc_++;                                   \
+    }                                          \
+    break;                                     \
+  }
+
+#define OP3(INS_TYPE, C_TYPE) CASE3(Gt, >, INS_TYPE, C_TYPE)
+    BinarInstList(OP3)
+#undef OP3
+
+#define OP3(INS_TYPE, C_TYPE) CASE3(Eq, ==, INS_TYPE, C_TYPE)
+    BinarInstList(OP3)
+#undef OP3
+
+#define OP3(INS_TYPE, C_TYPE) CASE3(GtEq, >=, INS_TYPE, C_TYPE)
+    BinarInstList(OP3)
+#undef OP3
+
+#undef CASE3
+
 
       case Op::SavePC: {
         *(uint64_t*)baseOffset(ins.arg0) = pc_ + 1;
@@ -109,6 +143,7 @@ void ByteCodeVM::Run(int ticks) {
       }
 
         // clang-format on
+
       case Op::Call:
 
         if (ins.arg0 == SC_PRINT_I8) {
@@ -137,18 +172,6 @@ void ByteCodeVM::Run(int ticks) {
 
         pc_++;
         break;
-
-      case Op::JumpGtI8: {
-        uint8_t a = *(uint8_t*)baseOffset(ins.arg0);
-        uint8_t b = *(uint8_t*)baseOffset(ins.arg1);
-
-        if (a > b) {
-          pc_ = *(uint64_t*)baseOffset(ins.arg2);
-        } else {
-          pc_++;
-        }
-        break;
-      }
 
       default:
         printf("ERROR op is %d \n", (int)ins.op);
