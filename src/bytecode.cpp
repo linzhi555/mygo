@@ -135,6 +135,26 @@ void ByteCodeVM::Run(int ticks) {
 
 #undef CASE3
 
+#define CASE4(TO_TYPE, TO_C_TYPE, INS_TYPE, C_TYPE)         \
+  case Op::To##TO_TYPE##INS_TYPE: {                         \
+    *(TO_C_TYPE*) baseOffset(ins.arg0) =                    \
+            (TO_C_TYPE) (*(C_TYPE*) baseOffset(ins.arg1));  \
+    pc_++;                                                  \
+    break;                                                  \
+  }
+
+#define OP4(INS_TYPE, C_TYPE) CASE4(I32, uint32_t, INS_TYPE, C_TYPE)
+    BinarInstList(OP4)
+#undef OP4
+
+#define OP4(INS_TYPE, C_TYPE) CASE4(F32, float, INS_TYPE, C_TYPE)
+    BinarInstList(OP4)
+#undef OP4
+
+
+#undef CASE4
+
+
 
       case Op::SavePC: {
         *(uint64_t*)baseOffset(ins.arg0) = pc_ + 1;

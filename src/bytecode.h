@@ -82,6 +82,14 @@ enum class Op : uint32_t {
   BinarInstList(JumpGtEq)
 #undef JumpGtEq
 
+#define ToI32(INS_TYPE, C_TYPE) ToI32##INS_TYPE ,
+  BinarInstList(ToI32)
+#undef ToI32
+
+#define ToF32(INS_TYPE, C_TYPE) ToF32##INS_TYPE ,
+  BinarInstList(ToF32)
+#undef ToF32
+
   // clang-format on
   //
 
