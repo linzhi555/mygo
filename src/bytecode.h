@@ -7,8 +7,10 @@
 #include <vector>
 namespace mygo {
 
-enum SYSCALL : uint32_t {
-  SC_PRINT_I8 = 1000,
+
+const uint64_t BUILT_IN_START = UINT64_MAX - 10000;
+enum SYSCALL : uint64_t {
+  SC_PRINT_I8 = BUILT_IN_START,
   SC_PRINT_I32,
   SC_PRINT_I64,
   SC_PRINT_F32,
@@ -124,6 +126,9 @@ inline uint64_t f32u64(float f) {
   return res;
 }
 
+using CallStack = std::vector<uint64_t>;
+
+
 class ByteCodeVM {
  public:
   ByteCodeVM(std::unique_ptr<Program> program) : program_(std::move(program)) {
@@ -177,10 +182,13 @@ class ByteCodeVM {
   const uint64_t MAX_HEAP = 1000 * 1000 * 1000;
   const uint64_t MAX_STACK = 1000 * 1000 * 8;
 
+  uint64_t rom_start_ = 0;
   uint64_t stack_start_;
   uint64_t heap_start_;
-  uint64_t rom_start_ = 0;
   uint64_t base_addr_;
+
+
+  CallStack call_stack_;
 
   uint8_t* heap_;
   uint8_t* stack_;

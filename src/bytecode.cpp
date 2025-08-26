@@ -166,32 +166,47 @@ void ByteCodeVM::Run(int ticks) {
 
       case Op::Call:
 
-        if (ins.arg0 == SC_PRINT_I8) {
-          printf("%d\n", *(uint8_t*)(baseOffset(ins.arg1)));
+        // do funcall
+        if (ins.arg0 < BUILT_IN_START) {
+          pc_ = ins.arg0;
+          sp_ += ins.arg1;
+          call_stack_.push_back(sp_);
+          break;
         }
 
-        else if (ins.arg0 == SC_PRINT_I32) {
-          printf("%d\n", *(uint32_t*)(baseOffset(ins.arg1)));
-        }
-
-        else if (ins.arg0 == SC_PRINT_I64) {
-          printf("%ld\n", *(uint64_t*)(baseOffset(ins.arg1)));
-        }
-
-        else if (ins.arg0 == SC_PRINT_F32) {
-          printf("%f\n", *(float*)(baseOffset(ins.arg1)));
-        }
-
-        else if (ins.arg0 == SC_PRINT_F64) {
-          printf("%f\n", *(double*)(baseOffset(ins.arg1)));
-        }
-
-        else if (ins.arg0 == SC_PRINT_STR) {
-          printf("%s\n", (char*)(baseOffset(ins.arg1)));
+        // bultin function
+        switch (ins.arg0) {
+          case SC_PRINT_I8:
+            printf("%d\n", *(uint8_t*)(baseOffset(ins.arg1)));
+            break;
+          case SC_PRINT_I32:
+            printf("%d\n", *(uint32_t*)(baseOffset(ins.arg1)));
+            break;
+          case SC_PRINT_I64:
+            printf("%ld\n", *(uint64_t*)(baseOffset(ins.arg1)));
+            break;
+          case SC_PRINT_F32:
+            printf("%f\n", *(float*)(baseOffset(ins.arg1)));
+            break;
+          case SC_PRINT_F64:
+            printf("%f\n", *(double*)(baseOffset(ins.arg1)));
+            break;
+          case SC_PRINT_STR:
+            printf("%s\n", (char*)(baseOffset(ins.arg1)));
+            break;
+          default:
+            assert("not implement op for this op" && false);
+            break;
         }
 
         pc_++;
+
         break;
+
+      case Op::Return:
+        pc_ = call_stack_.back();
+        call_stack_.pop_back();
+        sp_ -= ins.arg0;
 
       default:
         printf("ERROR op is %d \n", (int)ins.op);
