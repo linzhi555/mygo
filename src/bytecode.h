@@ -32,12 +32,18 @@ enum class Op : uint32_t {
   Set8,
   Set32,
   Set64,
-  SetSP,
+  
+  // set the size of the stack
+  SetStackBottom,
+
   // set 0x0000000 as base address
   BaseZero,
 
   // set stack top address as base address
-  BaseStack,
+  BaseStackTop,
+
+  // set the stack bottom addres as the base address
+  BaseStackBottom,
 
 // clang-format off
 #define ADD(INS_TYPE, C_TYPE) Add##INS_TYPE ,
@@ -45,7 +51,7 @@ enum class Op : uint32_t {
 #undef ADD
 
 #define SUB(INS_TYPE, C_TYPE) Sub##INS_TYPE ,
-  BinarInstList(SUB) 
+  BinarInstList(SUB)
 #undef SUB
 
 #define MUL(INS_TYPE, C_TYPE) Mul##INS_TYPE ,
@@ -126,7 +132,17 @@ inline uint64_t f32u64(float f) {
   return res;
 }
 
-using CallStack = std::vector<uint64_t>;
+
+
+struct CallPoint {
+  uint64_t pc;
+  uint64_t stack_top;
+  uint64_t stack_bottom;
+};
+
+using CallStack = std::vector<CallPoint>;
+
+
 
 
 class ByteCodeVM {
@@ -138,12 +154,7 @@ class ByteCodeVM {
   ~ByteCodeVM();
 
   void Run(int ticks);
-  // program counter
-  uint64_t pc_ = 0;
-  // stacktop
-  uint64_t sp_ = 0;
 
-  std::array<uint64_t, 10> registers_{{0}};
 
   inline void* transAddress(uint64_t absolute) {
     if (absolute >= heap_start_) {
@@ -162,15 +173,22 @@ class ByteCodeVM {
   }
 
   void DebugStack() {
-    for (uint64_t i = 0; i < sp_; i++) {
-      printf("%3d ", stack_[i]);
-    }
-    printf("\n");
 
-    for (uint64_t i = 0; i < sp_ && i < 255; i++) {
-      printf("%3d ", (int)i);
+    const int line_width = 20;
+    for (int j=0; j < 200 ; j+= line_width){
+      for (uint64_t i = j; i < j+line_width; i++) {
+        printf("%3d ", stack_[i]);
+      }
+      printf("\n");
+  
+      for (uint64_t i = j; i <  j+line_width; i++) {
+        printf("%3d ", (int)i);
+      }
+      printf("\n");
+      printf("\n");
+      printf("\n");
+
     }
-    printf("\n");
   }
 
   uint64_t stack_start() { return stack_start_; }
@@ -181,6 +199,13 @@ class ByteCodeVM {
 
   const uint64_t MAX_HEAP = 1000 * 1000 * 1000;
   const uint64_t MAX_STACK = 1000 * 1000 * 8;
+
+  // program counter
+  uint64_t pc_ = 0;
+  // stacktop
+  uint64_t stack_top_ = 0;
+  uint64_t stack_bottom_ = 0;
+
 
   uint64_t rom_start_ = 0;
   uint64_t stack_start_;

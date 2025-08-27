@@ -50,8 +50,8 @@ void ByteCodeVM::Run(int ticks) {
         pc_++;
         break;
       }
-      case Op::SetSP: {
-        sp_ = ins.arg0;
+      case Op::SetStackBottom: {
+        stack_bottom_ = stack_top_ + ins.arg0;
         pc_++;
         break;
       }
@@ -168,9 +168,11 @@ void ByteCodeVM::Run(int ticks) {
 
         // do funcall
         if (ins.arg0 < BUILT_IN_START) {
+          call_stack_.push_back(
+            {.pc = pc_,.stack_top = stack_top_, .stack_bottom = stack_bottom_}
+          );
           pc_ = ins.arg0;
-          sp_ += ins.arg1;
-          call_stack_.push_back(sp_);
+          stack_top_ = stack_bottom_;
           break;
         }
 
@@ -203,11 +205,13 @@ void ByteCodeVM::Run(int ticks) {
 
         break;
 
-      case Op::Return:
-        pc_ = call_stack_.back();
+      case Op::Return: {
+        CallPoint cp = call_stack_.back();
         call_stack_.pop_back();
-        sp_ -= ins.arg0;
-
+        stack_top_ = cp.stack_top;
+        pc_ = cp.pc;
+        break;
+      }
       default:
         printf("ERROR op is %d \n", (int)ins.op);
         assert("not implement op for this op" && false);

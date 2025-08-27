@@ -15,7 +15,7 @@ TEST(ByteVM, cal_pi) {
   uint64_t times = 10000;
   bool need_debug = true;
 
-  program->AddInstruction({mygo::Op::SetSP, 0, 0, 0});
+  program->AddInstruction({mygo::Op::SetStackBottom, 100, 0, 0});
 
   uint64_t count_loc = 0;
   uint64_t one_loc = 4;
