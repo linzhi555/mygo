@@ -27,8 +27,8 @@ ByteCodeVM::~ByteCodeVM() {
   }
 }
 
-void ByteCodeVM::Run(int ticks) {
-  for (int i = 0; i < ticks; i++) {
+void ByteCodeVM::Run(uint64_t ticks) {
+  for (uint64_t i = 0; i < ticks; i++) {
     if (pc_ >= program_->instructions.size()) break;
     Instruction& ins = program_->instructions.at(pc_);
 
@@ -52,6 +52,18 @@ void ByteCodeVM::Run(int ticks) {
       }
       case Op::SetStackBottom: {
         stack_bottom_ = stack_top_ + ins.arg0;
+        pc_++;
+        break;
+      }
+
+      case Op::BaseStackTop: {
+        base_addr_ = stack_top_;
+        pc_++;
+        break;
+      }
+
+      case Op::BaseStackBottom: {
+        base_addr_ = stack_bottom_;
         pc_++;
         break;
       }
@@ -168,9 +180,9 @@ void ByteCodeVM::Run(int ticks) {
 
         // do funcall
         if (ins.arg0 < BUILT_IN_START) {
-          call_stack_.push_back(
-            {.pc = pc_,.stack_top = stack_top_, .stack_bottom = stack_bottom_}
-          );
+          call_stack_.push_back({.pc = (pc_ + 1),
+                                 .stack_top = stack_top_,
+                                 .stack_bottom = stack_bottom_});
           pc_ = ins.arg0;
           stack_top_ = stack_bottom_;
           break;
@@ -182,6 +194,7 @@ void ByteCodeVM::Run(int ticks) {
             printf("%d\n", *(uint8_t*)(baseOffset(ins.arg1)));
             break;
           case SC_PRINT_I32:
+
             printf("%d\n", *(uint32_t*)(baseOffset(ins.arg1)));
             break;
           case SC_PRINT_I64:
@@ -209,6 +222,7 @@ void ByteCodeVM::Run(int ticks) {
         CallPoint cp = call_stack_.back();
         call_stack_.pop_back();
         stack_top_ = cp.stack_top;
+        stack_bottom_ = cp.stack_bottom;
         pc_ = cp.pc;
         break;
       }

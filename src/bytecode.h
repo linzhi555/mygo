@@ -1,12 +1,10 @@
 #pragma once
-#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <memory>
 #include <string>
 #include <vector>
 namespace mygo {
-
 
 const uint64_t BUILT_IN_START = UINT64_MAX - 10000;
 enum SYSCALL : uint64_t {
@@ -32,7 +30,7 @@ enum class Op : uint32_t {
   Set8,
   Set32,
   Set64,
-  
+
   // set the size of the stack
   SetStackBottom,
 
@@ -132,8 +130,6 @@ inline uint64_t f32u64(float f) {
   return res;
 }
 
-
-
 struct CallPoint {
   uint64_t pc;
   uint64_t stack_top;
@@ -141,9 +137,6 @@ struct CallPoint {
 };
 
 using CallStack = std::vector<CallPoint>;
-
-
-
 
 class ByteCodeVM {
  public:
@@ -153,8 +146,7 @@ class ByteCodeVM {
 
   ~ByteCodeVM();
 
-  void Run(int ticks);
-
+  void Run(uint64_t ticks);
 
   inline void* transAddress(uint64_t absolute) {
     if (absolute >= heap_start_) {
@@ -173,25 +165,25 @@ class ByteCodeVM {
   }
 
   void DebugStack() {
-
-    const int line_width = 20;
-    for (int j=0; j < 200 ; j+= line_width){
-      for (uint64_t i = j; i < j+line_width; i++) {
+    const uint64_t line_width = 20;
+    for (int j = 0; j < 200; j += line_width) {
+      for (uint64_t i = j; i < j + line_width; i++) {
         printf("%3d ", stack_[i]);
       }
       printf("\n");
-  
-      for (uint64_t i = j; i <  j+line_width; i++) {
+
+      for (uint64_t i = j; i < j + line_width; i++) {
         printf("%3d ", (int)i);
       }
       printf("\n");
       printf("\n");
       printf("\n");
-
     }
   }
 
   uint64_t stack_start() { return stack_start_; }
+
+  void setPc(uint64_t pc) { pc_ = pc; }
 
  private:
   void Init();
@@ -206,12 +198,10 @@ class ByteCodeVM {
   uint64_t stack_top_ = 0;
   uint64_t stack_bottom_ = 0;
 
-
   uint64_t rom_start_ = 0;
   uint64_t stack_start_;
   uint64_t heap_start_;
   uint64_t base_addr_;
-
 
   CallStack call_stack_;
 
