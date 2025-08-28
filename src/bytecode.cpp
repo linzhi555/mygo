@@ -28,7 +28,7 @@ ByteCodeVM::~ByteCodeVM() {
 }
 
 void ByteCodeVM::Run(uint64_t ticks) {
-  for (uint64_t i = 0; i < ticks; i++) {
+  for (uint64_t i = 0; i < ticks && !finished_; i++) {
     if (pc_ >= program_->instructions.size()) break;
     Instruction& ins = program_->instructions.at(pc_);
 
@@ -219,6 +219,12 @@ void ByteCodeVM::Run(uint64_t ticks) {
         break;
 
       case Op::Return: {
+        if (call_stack_.empty()){
+            finished_ = true;
+            printf("process finished \n");
+            break;
+        }
+
         CallPoint cp = call_stack_.back();
         call_stack_.pop_back();
         stack_top_ = cp.stack_top;

@@ -80,6 +80,7 @@ TEST(ByteVM, cal_pi) {
   program->AddInstruction({Op::BaseStackBottom, 0, 0, 0});
   program->AddInstruction({Op::Set32, 0, 200, 0});
   program->AddInstruction({Op::Call, 0, 0, 0});
+  program->AddInstruction({Op::Return, 0, 0, 0});
 
   mygo::ByteCodeVM vm(std::move(program));
   vm.setPc(main_loc);

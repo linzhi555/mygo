@@ -204,6 +204,7 @@ class ByteCodeVM {
   uint64_t base_addr_;
 
   CallStack call_stack_;
+  bool finished_ = false;
 
   uint8_t* heap_;
   uint8_t* stack_;
