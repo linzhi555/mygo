@@ -134,6 +134,7 @@ struct CallPoint {
   uint64_t pc;
   uint64_t stack_top;
   uint64_t stack_bottom;
+  uint64_t ret_res_addr;
 };
 
 using CallStack = std::vector<CallPoint>;

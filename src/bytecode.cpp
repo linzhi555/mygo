@@ -182,7 +182,8 @@ void ByteCodeVM::Run(uint64_t ticks) {
         if (ins.arg0 < BUILT_IN_START) {
           call_stack_.push_back({.pc = (pc_ + 1),
                                  .stack_top = stack_top_,
-                                 .stack_bottom = stack_bottom_});
+                                 .stack_bottom = stack_bottom_,
+                                 .ret_res_addr = ins.arg1});
           pc_ = ins.arg0;
           stack_top_ = stack_bottom_;
           break;
@@ -219,17 +220,31 @@ void ByteCodeVM::Run(uint64_t ticks) {
         break;
 
       case Op::Return: {
-        if (call_stack_.empty()){
-            finished_ = true;
-            printf("process finished \n");
-            break;
+        if (call_stack_.empty()) {
+          finished_ = true;
+          printf("process finished \n");
+          break;
+        }
+
+        uint64_t ret_addr = ins.arg0;
+        uint64_t ret_len = ins.arg1;
+
+
+        std::vector<uint8_t> ret_content;
+        for (int i = 0; i < ret_len; i++) {
+          ret_content.push_back(*(uint8_t*)(baseOffset(ret_addr + i)));
         }
 
         CallPoint cp = call_stack_.back();
         call_stack_.pop_back();
         stack_top_ = cp.stack_top;
         stack_bottom_ = cp.stack_bottom;
+        base_addr_ = stack_top_;
         pc_ = cp.pc;
+        for (size_t i = 0; i < ret_content.size(); i++) {
+          *(uint8_t*)(baseOffset(cp.ret_res_addr + i)) = ret_content[i];
+        }
+
         break;
       }
       default:

@@ -53,11 +53,11 @@ std::vector<Instruction> gen_cal_pi_codes() {
 
   result.push_back({Op::JumpGtI32, times_loc, count_loc, pc_loc});
   result.push_back({Op::ToI32F32, pi_int_loc, pi_loc, 0});
-  result.push_back({Op::Call, mygo::SC_PRINT_STR, 100, 0});
-  result.push_back({Op::Call, mygo::SC_PRINT_F32, pi_loc, 0});
-  result.push_back({Op::Call, mygo::SC_PRINT_I32, pi_int_loc, 0});
-  result.push_back({Op::Call, mygo::SC_PRINT_I32, times_loc, 0});
-  result.push_back({Op::Return, 0, 0, 0});
+  //result.push_back({Op::Call, mygo::SC_PRINT_STR, 100, 0});
+  //result.push_back({Op::Call, mygo::SC_PRINT_F32, pi_loc, 0});
+  //result.push_back({Op::Call, mygo::SC_PRINT_I32, pi_int_loc, 0});
+  //result.push_back({Op::Call, mygo::SC_PRINT_I32, times_loc, 0});
+  result.push_back({Op::Return, pi_loc, 4, 0});
 
   return result;
 }
@@ -71,15 +71,28 @@ TEST(ByteVM, cal_pi) {
   }
 
   uint64_t main_loc = program->instructions.size();
+  uint64_t ret_loc = 4;
+
+  program->AddInstruction({Op::Set32, ret_loc, f32u64(4.0), 0});
+  program->AddInstruction({Op::Call, mygo::SC_PRINT_F32, ret_loc, 0});
 
   program->AddInstruction({Op::SetStackBottom, 20, 0, 0});
   program->AddInstruction({Op::BaseStackBottom, 0, 0, 0});
-  program->AddInstruction({Op::Set32, 0, 1000, 0});
-  program->AddInstruction({Op::Call, 0, 0, 0});
+  program->AddInstruction({Op::Set32, 0, 200, 0});
+  program->AddInstruction({Op::Call, 0, ret_loc, 0});
+
+
+  program->AddInstruction({Op::Call, mygo::SC_PRINT_F32, ret_loc, 0});
+
+
 
   program->AddInstruction({Op::BaseStackBottom, 0, 0, 0});
-  program->AddInstruction({Op::Set32, 0, 200, 0});
-  program->AddInstruction({Op::Call, 0, 0, 0});
+  program->AddInstruction({Op::Set32, 0, 10000, 0});
+  program->AddInstruction({Op::Call, 0, ret_loc, 0});
+
+  program->AddInstruction({Op::Call, mygo::SC_PRINT_F32, ret_loc, 0});
+
+
   program->AddInstruction({Op::Return, 0, 0, 0});
 
   mygo::ByteCodeVM vm(std::move(program));
