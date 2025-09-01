@@ -34,19 +34,19 @@ void ByteCodeVM::Run(uint64_t ticks) {
 
     switch (ins.op) {
       case Op::Set8: {
-        *(uint8_t*)baseOffset(ins.arg0) = (uint8_t)ins.arg1;
+        *(uint8_t*)transAddr(ins.arg0) = (uint8_t)ins.arg1;
         pc_++;
         break;
       }
 
       case Op::Set32: {
-        *(uint32_t*)baseOffset(ins.arg0) = (uint32_t)ins.arg1;
+        *(uint32_t*)transAddr(ins.arg0) = (uint32_t)ins.arg1;
         pc_++;
         break;
       }
 
       case Op::Set64: {
-        *(uint64_t*)baseOffset(ins.arg0) = ins.arg1;
+        *(uint64_t*)transAddr(ins.arg0) = ins.arg1;
         pc_++;
         break;
       }
@@ -56,23 +56,11 @@ void ByteCodeVM::Run(uint64_t ticks) {
         break;
       }
 
-      case Op::BaseStackTop: {
-        base_addr_ = stack_top_;
-        pc_++;
-        break;
-      }
-
-      case Op::BaseStackBottom: {
-        base_addr_ = stack_bottom_;
-        pc_++;
-        break;
-      }
-
       // clang-format off
 #define CASE1(OPNAME, OP, INS_TYPE, C_TYPE)                                \
   case Op::OPNAME##INS_TYPE: {                                             \
-    *(C_TYPE*)baseOffset(ins.arg0) =                                       \
-        *(C_TYPE*)baseOffset(ins.arg1) OP * (C_TYPE*)baseOffset(ins.arg2); \
+    *(C_TYPE*)transAddr(ins.arg0) =                                       \
+        *(C_TYPE*)transAddr(ins.arg1) OP * (C_TYPE*)transAddr(ins.arg2); \
     pc_++;                                                                 \
     break;                                                                 \
   }
@@ -97,7 +85,7 @@ void ByteCodeVM::Run(uint64_t ticks) {
 
 #define CASE2(OPNAME, OP, INS_TYPE, C_TYPE)                      \
   case Op::OPNAME##INS_TYPE##D: {                                \
-    *(C_TYPE*)baseOffset(ins.arg0) OP## = *(C_TYPE*)(&ins.arg1); \
+    *(C_TYPE*)transAddr(ins.arg0) OP## = *(C_TYPE*)(&ins.arg1); \
     pc_++;                                                       \
     break;                                                       \
   }
@@ -122,11 +110,11 @@ void ByteCodeVM::Run(uint64_t ticks) {
 
 #define CASE3(OPNAME, OP, INS_TYPE, C_TYPE)    \
   case Op::Jump##OPNAME##INS_TYPE: {           \
-    C_TYPE a = *(C_TYPE*)baseOffset(ins.arg0); \
-    C_TYPE b = *(C_TYPE*)baseOffset(ins.arg1); \
+    C_TYPE a = *(C_TYPE*)transAddr(ins.arg0); \
+    C_TYPE b = *(C_TYPE*)transAddr(ins.arg1); \
                                                \
     if (a OP b) {                              \
-      pc_ = *(uint64_t*)baseOffset(ins.arg2);  \
+      pc_ = *(uint64_t*)transAddr(ins.arg2);  \
     } else {                                   \
       pc_++;                                   \
     }                                          \
@@ -149,8 +137,8 @@ void ByteCodeVM::Run(uint64_t ticks) {
 
 #define CASE4(TO_TYPE, TO_C_TYPE, INS_TYPE, C_TYPE)         \
   case Op::To##TO_TYPE##INS_TYPE: {                         \
-    *(TO_C_TYPE*) baseOffset(ins.arg0) =                    \
-            (TO_C_TYPE) (*(C_TYPE*) baseOffset(ins.arg1));  \
+    *(TO_C_TYPE*) transAddr(ins.arg0) =                    \
+            (TO_C_TYPE) (*(C_TYPE*) transAddr(ins.arg1));  \
     pc_++;                                                  \
     break;                                                  \
   }
@@ -169,7 +157,7 @@ void ByteCodeVM::Run(uint64_t ticks) {
 
 
       case Op::SavePC: {
-        *(uint64_t*)baseOffset(ins.arg0) = pc_ + 1;
+        *(uint64_t*)transAddr(ins.arg0) = pc_ + 1;
         pc_++;
         break;
       }
@@ -192,23 +180,23 @@ void ByteCodeVM::Run(uint64_t ticks) {
         // bultin function
         switch (ins.arg0) {
           case SC_PRINT_I8:
-            printf("%d\n", *(uint8_t*)(baseOffset(ins.arg1)));
+            printf("%d\n", *(uint8_t*)(transAddr(ins.arg1)));
             break;
           case SC_PRINT_I32:
 
-            printf("%d\n", *(uint32_t*)(baseOffset(ins.arg1)));
+            printf("%d\n", *(uint32_t*)(transAddr(ins.arg1)));
             break;
           case SC_PRINT_I64:
-            printf("%ld\n", *(uint64_t*)(baseOffset(ins.arg1)));
+            printf("%ld\n", *(uint64_t*)(transAddr(ins.arg1)));
             break;
           case SC_PRINT_F32:
-            printf("%f\n", *(float*)(baseOffset(ins.arg1)));
+            printf("%f\n", *(float*)(transAddr(ins.arg1)));
             break;
           case SC_PRINT_F64:
-            printf("%f\n", *(double*)(baseOffset(ins.arg1)));
+            printf("%f\n", *(double*)(transAddr(ins.arg1)));
             break;
           case SC_PRINT_STR:
-            printf("%s\n", (char*)(baseOffset(ins.arg1)));
+            printf("%s\n", (char*)(transAddr(ins.arg1)));
             break;
           default:
             assert("not implement op for this op" && false);
@@ -229,10 +217,9 @@ void ByteCodeVM::Run(uint64_t ticks) {
         uint64_t ret_addr = ins.arg0;
         uint64_t ret_len = ins.arg1;
 
-
         std::vector<uint8_t> ret_content;
-        for (int i = 0; i < ret_len; i++) {
-          ret_content.push_back(*(uint8_t*)(baseOffset(ret_addr + i)));
+        for (uint64_t i = 0; i < ret_len; i++) {
+          ret_content.push_back(*(uint8_t*)(transAddr(ret_addr + i)));
         }
 
         CallPoint cp = call_stack_.back();
@@ -242,7 +229,7 @@ void ByteCodeVM::Run(uint64_t ticks) {
         base_addr_ = stack_top_;
         pc_ = cp.pc;
         for (size_t i = 0; i < ret_content.size(); i++) {
-          *(uint8_t*)(baseOffset(cp.ret_res_addr + i)) = ret_content[i];
+          *(uint8_t*)(transAddr(cp.ret_res_addr + i)) = ret_content[i];
         }
 
         break;

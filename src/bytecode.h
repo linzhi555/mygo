@@ -1,4 +1,5 @@
 #pragma once
+#include <cassert>
 #include <cstdint>
 #include <cstdio>
 #include <memory>
@@ -15,6 +16,25 @@ enum SYSCALL : uint64_t {
   SC_PRINT_F64,
   SC_PRINT_STR,
 };
+
+typedef uint64_t Address;
+
+// clang-format off
+const Address TypePart      = 0xFF00000000000000;
+const Address OffsetPart    = 0x00FFFFFFFFFFFFFF;
+
+const Address ZERO          = 0x0000000000000000;
+const Address ROM           = 0x0100000000000000;
+const Address CODE          = 0x0200000000000000;
+const Address STACK_TOP     = 0x0300000000000000;
+const Address STACK_TAIL    = 0x0400000000000000;
+// clang-format on
+
+inline Address base(Address addr_type, Address offset) {
+  Address res = offset & OffsetPart;
+  res |= addr_type;
+  return res;
+}
 
 // clang-format off
 #define BinarInstList(OP) \
@@ -33,15 +53,6 @@ enum class Op : uint32_t {
 
   // set the size of the stack
   SetStackBottom,
-
-  // set 0x0000000 as base address
-  BaseZero,
-
-  // set stack top address as base address
-  BaseStackTop,
-
-  // set the stack bottom addres as the base address
-  BaseStackBottom,
 
 // clang-format off
 #define ADD(INS_TYPE, C_TYPE) Add##INS_TYPE ,
@@ -149,20 +160,17 @@ class ByteCodeVM {
 
   void Run(uint64_t ticks);
 
-  inline void* transAddress(uint64_t absolute) {
-    if (absolute >= heap_start_) {
-      return &heap_[absolute];
-    } else if (absolute >= stack_start_) {
-      return &stack_[absolute];
-    } else {
-      return &program_->rom[absolute];
+  inline void* transAddr(Address addr) {
+    Address type = addr & TypePart;
+    Address offset = addr & OffsetPart;
+    switch (type) {
+      case STACK_TOP:
+        return &stack_[stack_top_ + offset];
+      case STACK_TAIL:
+        return &stack_[stack_bottom_ + offset];
+      default:
+        assert("no implement" && false);
     }
-  }
-
-  inline uint64_t toAbsolute(uint64_t offset) { return base_addr_ + offset; }
-
-  inline void* baseOffset(uint64_t offset) {
-    return transAddress(toAbsolute(offset));
   }
 
   void DebugStack() {
