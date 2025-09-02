@@ -240,6 +240,5 @@ void ByteCodeVM::Run(uint64_t ticks) {
         break;
     }
   }
-}  // namespace mygo
-
+}
 }  // namespace mygo
