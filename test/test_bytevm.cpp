@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <memory>
 
-#include "bytecode.h"
+#include "vm.h"
 
 namespace mygo {
 

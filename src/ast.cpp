@@ -102,6 +102,7 @@ Result<Block> Block::parse(TokenStream& stream) {
       NodeParseFunc<Function>,     //
       NodeParseFunc<Return>,       //
       NodeParseFunc<For>,          //
+      NodeParseFunc<Typedef>,      //
   };
 
   for (int i = 0;; i++) {
@@ -557,6 +558,136 @@ Result<For> For::parse(TokenStream& stream) {
 
   guard.finish(for_node->start, for_node->end);
   return Result<For>::ok(std::move(for_node));
+}
+
+std::string For::debug() {
+  std::string res;
+  res += "For:\n";
+  res += "init_stmt ";
+  if (init_stmt_) {
+    res += init_stmt_.value()->debug();
+    res += "\n";
+  }
+  res += "finish_cond ";
+  if (finish_cond_) {
+    res += finish_cond_.value()->debug();
+    res += "\n";
+  }
+  res += "step_stmp_ ";
+  if (step_stmp_) {
+    res += step_stmp_.value()->debug();
+    res += "\n";
+  }
+
+  res += block_->debug();
+  return res;
+};
+
+std::string VarType::debug() {
+  std::string res = "VarType\n";
+
+  if (is_struct_) {
+    res += stct_->debug();
+  }
+
+  return res;
+}
+
+Result<VarType> VarType::parse(TokenStream& stream) {
+  std::unique_ptr<VarType> res = std::make_unique<VarType>();
+  TokenStream::StateGuard guard(stream);
+  Result<Struct> stct = Struct::parse(stream);
+
+  if (stct.isOk()) {
+    res->is_struct_ = true;
+    res->stct_ = std::move(stct.takeValue());
+    guard.finish(res->start, res->end);
+
+    return Result<VarType>::ok(std::move(res));
+  }
+
+  return Err(stream.loc(), "parse var type error");
+}
+
+std::string Typedef::debug() {
+  std::string res = "Typedef\n";
+  res += var_type_->debug();
+  res += " ";
+  res += name_;
+  return res;
+}
+
+Result<Typedef> Typedef::parse(TokenStream& stream) {
+  std::unique_ptr<Typedef> res = std::make_unique<Typedef>();
+  TokenStream::StateGuard guard(stream);
+
+  EXPECT_TOKEN(stream, token::Type::Typedef);
+
+  Result<VarType> var_type = VarType::parse(stream);
+  if (var_type.isErr()) {
+    std::cout << "expect var_type" << std::endl;
+    return Err(stream.loc(), "expect var_type");
+  }
+  res->var_type_ = std::move(var_type.takeValue());
+
+  if (stream.Peek()->type() == token::Type::Symbol) {
+    res->name_ = stream.Peek()->str();
+    stream.Next();
+    guard.finish(res->start, res->end);
+    return Result<Typedef>::ok(std::move(res));
+  } else {
+    return Err(stream.loc(), "expect name in typedef");
+  }
+}
+
+Result<Struct> Struct::parse(TokenStream& stream) {
+  std::unique_ptr<Struct> res = std::make_unique<Struct>();
+  TokenStream::StateGuard guard(stream);
+  EXPECT_TOKEN(stream, token::Type::Struct);
+  EXPECT_TOKEN(stream, token::Type::LBrace);
+  SKIP_TOKEN(stream, token::Type::Enl);
+
+  for (int i = 0;; i++) {
+    assert(i < 10000);
+    Struct::Field field;
+
+    if (stream.Peek()->type() == token::Type::Symbol) {
+      field.first = stream.Peek()->str();
+      stream.Next();
+    } else {
+      break;
+    }
+
+    if (stream.Peek()->type() == token::Type::Symbol) {
+      field.second = stream.Peek()->str();
+      stream.Next();
+    } else {
+      return Err(stream.loc(), "expect name");
+    }
+
+    res->fields_.push_back(std::move(field));
+
+    EXPECT_TOKEN(stream, token::Type::Enl);
+    SKIP_TOKEN(stream, token::Type::Enl);
+  }
+
+  EXPECT_TOKEN(stream, token::Type::RBrace);
+
+  guard.finish(res->start, res->end);
+  return Result<Struct>::ok(std::move(res));
+}
+
+std::string Struct::debug() {
+  std::string res;
+  res += "Struct:\n";
+  for (Field& field : fields_) {
+    res += field.first;
+    res += " ";
+    res += field.second;
+    res += "\n";
+  }
+
+  return res;
 }
 
 }  // namespace ast

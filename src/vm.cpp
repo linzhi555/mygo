@@ -1,4 +1,4 @@
-#include "bytecode.h"
+#include "vm.h"
 
 #include <cassert>
 #include <cstdint>
