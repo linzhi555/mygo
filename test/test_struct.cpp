@@ -1,8 +1,12 @@
 #include <gtest/gtest.h>
+#include <spdlog/spdlog.h>
 
 #include "ast.h"
 
 TEST(mygo_struct, parse) {
+  spdlog::info("Welcome to spdlog version {}.{}.{}  !", SPDLOG_VER_MAJOR,
+               SPDLOG_VER_MINOR, SPDLOG_VER_PATCH);
+
   std::string src = R"(type struct {
     age int
     name string

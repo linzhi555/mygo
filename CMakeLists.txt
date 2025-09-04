@@ -15,11 +15,16 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 
+# dependencies
 add_subdirectory(./third_party/libuv-1.51.0)
 include_directories(third_party/libuv-1.51.0/include)
 
 add_subdirectory(./third_party/googletest-1.17.0)
 include_directories(./third_party/googletest-1.17.0/googletest/include)
+
+add_subdirectory(./third_party/spdlog-1.15.3)
+include_directories(./third_party/spdlog-1.15.3/include)
+
 
 
 include_directories(./src)
@@ -39,7 +44,7 @@ set( LIB_SOURCES
 )
 
 add_library(mygodev STATIC ${LIB_SOURCES})
-target_link_libraries(mygodev PRIVATE uv)
+target_link_libraries(mygodev PRIVATE uv spdlog::spdlog_header_only)
 
 
 set(CMAKE_BUILD_TYPE Debug)
@@ -48,11 +53,6 @@ message(${LIB_SOURCES})
 add_executable(mygo ./src/mygo.cpp)
 target_link_libraries(mygo PRIVATE mygodev)
 
-#add_executable(test_func test/test_func.cpp)
-#target_link_libraries(test_func PRIVATE mygodev)
-#
-#add_executable(test_decl test/test_decl.cpp)
-#target_link_libraries(test_decl PRIVATE mygodev)
 
 add_executable(test_ret test/test_ret.cpp)
 target_link_libraries(test_ret GTest::gtest_main mygodev)
@@ -71,8 +71,3 @@ target_link_libraries(test_bytevm GTest::gtest_main mygodev)
 
 add_executable(test_struct test/test_struct.cpp)
 target_link_libraries(test_struct GTest::gtest_main mygodev)
-
-
-
-#add_executable(mygo ${PROJECT_SOURCES})
-#add_executable(test_all ${TEST_SOURCES})
