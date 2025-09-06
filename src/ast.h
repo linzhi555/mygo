@@ -43,12 +43,22 @@ class Node {
 class Err {
  public:
   Err() = default;
+  Err(Err&&) = default;
+  Err(const Err&) = default;
+
+  Err& operator=(Err& other) = default;
+
   Err(Loc loc, std::string_view msg) { err_stack_.emplace_back(loc, msg); }
 
-  // TODO: use static function rather to avodi function override
-  Err(Err&& old, Loc loc, std::string_view msg) {
-    err_stack_ = std::move(old.err_stack_);
-    err_stack_.emplace_back(loc, msg);
+  static Err Append(Err old, Loc loc, std::string_view msg) {
+    old.err_stack_.emplace_back(loc, msg);
+    return old;
+  }
+
+  static Err Fatal(Loc loc, std::string_view msg) {
+    Err err(loc, msg);
+    err.is_fatal = true;
+    return err;
   }
 
   int depth() { return err_stack_.size(); }
@@ -63,6 +73,7 @@ class Err {
     }
     return res;
   }
+
   const Item top() {
     assert(err_stack_.size() > 0);
     return err_stack_.at(err_stack_.size() - 1);
@@ -70,33 +81,30 @@ class Err {
 
  private:
   std::vector<Item> err_stack_;
+  // fatal err is error can not be deal, parsing is over.
+  bool is_fatal = false;
 };
 
 template <typename T>
 class Result {
  public:
-  static Result<T> ok(NodePtr<T>&& v) {
-    Result<T> res;
-    res.value_ = std::move(v);
-    return res;
-  };
 
   Result() = default;
+  Result(const Result&) = default;
+  Result(Result&&) = default;
 
   Result(Err e) { err_ = e; }
 
-  // static Result<T> err(std::string_view view) {
-  //   Result res;
-  //   res.err_ = Err(view);
-  //   return res;
-  // };
+  Result& operator=(const Result&) = default;
+  Result& operator=(NodePtr<T>&& value) { value_ = std::move(value); }
+  Result(NodePtr<T>&& value) { value_ = std::move(value); }
 
   NodePtr<T> value_;
   Err err_;
   bool isOk() { return value_.get() != nullptr; };
   bool isErr() { return !isOk(); }
-  NodePtr<T>&& takeValue() { return std::move(value_); }
-  Err&& takeErr() { return std::move(err_); }
+  NodePtr<T> takeValue() { return std::move(value_); }
+  Err takeErr() { return std::move(err_); }
 };
 
 enum class ExprType {
@@ -109,6 +117,7 @@ enum class ExprType {
 class Expr : public Node {
  public:
   Expr() = delete;
+  Expr(Expr&) = default;
   ~Expr() override = default;
 
   ExprType etype_;

@@ -44,7 +44,7 @@ set( LIB_SOURCES
 )
 
 add_library(mygodev STATIC ${LIB_SOURCES})
-target_link_libraries(mygodev PRIVATE uv spdlog::spdlog_header_only)
+target_link_libraries(mygodev PRIVATE uv )
 
 
 set(CMAKE_BUILD_TYPE Debug)
@@ -71,3 +71,6 @@ target_link_libraries(test_bytevm GTest::gtest_main mygodev)
 
 add_executable(test_struct test/test_struct.cpp)
 target_link_libraries(test_struct GTest::gtest_main mygodev)
+
+add_executable(test_ast test/test_ast.cpp)
+target_link_libraries(test_ast GTest::gtest_main mygodev)
