@@ -19,6 +19,15 @@
     S.Next();                                     \
   }
 
+#define EXPECT_TOKEN_FATAL(S, T)                                               \
+  if (!S.Peek())                                                               \
+    return Err::Fatal(S.loc(), std::string("expect token but get null") + #T); \
+  if (S.Peek().value().type() != T) {                                          \
+    return Err::Fatal(S.loc(), std::string("expect token ") + #T);             \
+  } else {                                                                     \
+    S.Next();                                                                  \
+  }
+
 #define EXPECT_TOKEN(S, T)                                              \
   if (!S.Peek())                                                        \
     return Err(S.loc(), std::string("expect token but get null") + #T); \
@@ -115,6 +124,8 @@ Result<Block> Block::parse(TokenStream& stream) {
         res->nodes_.push_back(node.takeValue());
         new_node_pushed = true;
         break;
+      } else if (node.isFatal()) {
+        return node.takeErr();
       }
     }
 
@@ -230,7 +241,7 @@ Result<Expr> Expr::parse_with_plus(TokenStream& stream) {
   }
   auto t = stream.Peek()->type();
   if (t != token::Type::Plus && t != token::Type::Sub) {
-    guard.finish(expr0_res.value_->start, expr0_res.value_->end);
+    guard.finish(expr0_res.asValue()->start, expr0_res.asValue()->end);
     return expr0_res;
   }
 
@@ -268,7 +279,7 @@ Result<Expr> Expr::parse_with_star(TokenStream& stream) {
 
   auto t = stream.Peek()->type();
   if (t != token::Type::Star && t != token::Type::Slash) {
-    guard.finish(expr0_res.value_->start, expr0_res.value_->end);
+    guard.finish(expr0_res.asValue()->start, expr0_res.asValue()->end);
     return expr0_res;
   }
 
@@ -301,7 +312,7 @@ Result<Expr> Expr::parse_atomic(TokenStream& stream) {
   TokenStream::StateGuard guard(stream);
   Result<Expr> fc = Expr::parse_funcall(stream);
   if (fc.isOk()) {
-    guard.finish(fc.value_->start, fc.value_->end);
+    guard.finish(fc.asValue()->start, fc.asValue()->end);
     return fc;
   }
 
@@ -324,7 +335,7 @@ Result<Expr> Expr::parse_atomic(TokenStream& stream) {
     expr = std::move(multi);
   }
 
-  guard.finish(expr.value_->start, expr.value_->end);
+  guard.finish(expr.asValue()->start, expr.asValue()->end);
   return expr;
 }
 
@@ -400,7 +411,7 @@ Result<Function> Function::parse(TokenStream& stream) {
   func_name = stream.Peek()->str();
   stream.Next();
 
-  EXPECT_TOKEN(stream, token::Type::LParent);
+  EXPECT_TOKEN_FATAL(stream, token::Type::LParent);
 
   for (int i = 0; i < 1000; i++) {
     std::string val_name, val_t;
@@ -421,8 +432,7 @@ Result<Function> Function::parse(TokenStream& stream) {
     func_node->args.push_back({val_name, val_t});
   }
 
-  EXPECT_TOKEN_ERR(stream, token::Type::RParent,
-                   (std::string("expect ) but get") + stream.Peek()->debug()));
+  EXPECT_TOKEN_FATAL(stream, token::Type::RParent);
 
   // parse returns, allow max 99 return
   for (int i = 0; i < 100; i++) {

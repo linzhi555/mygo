@@ -1,5 +1,3 @@
-#pragma once
-
 #include <cassert>
 #include <memory>
 #include <string>
@@ -57,9 +55,11 @@ class Err {
 
   static Err Fatal(Loc loc, std::string_view msg) {
     Err err(loc, msg);
-    err.is_fatal = true;
+    err.is_fatal_ = true;
     return err;
   }
+
+  bool isFatal() { return is_fatal_; }
 
   int depth() { return err_stack_.size(); }
 
@@ -82,13 +82,12 @@ class Err {
  private:
   std::vector<Item> err_stack_;
   // fatal err is error can not be deal, parsing is over.
-  bool is_fatal = false;
+  bool is_fatal_ = false;
 };
 
 template <typename T>
 class Result {
  public:
-
   Result() = default;
   Result(const Result&) = default;
   Result(Result&&) = default;
@@ -99,12 +98,18 @@ class Result {
   Result& operator=(NodePtr<T>&& value) { value_ = std::move(value); }
   Result(NodePtr<T>&& value) { value_ = std::move(value); }
 
-  NodePtr<T> value_;
-  Err err_;
   bool isOk() { return value_.get() != nullptr; };
   bool isErr() { return !isOk(); }
+  bool isFatal() { return !isOk() && err_.isFatal(); }
+
+  NodePtr<T>& asValue() { return value_; }
+  Err& asErr() { return err_; }
   NodePtr<T> takeValue() { return std::move(value_); }
   Err takeErr() { return std::move(err_); }
+
+ private:
+  NodePtr<T> value_;
+  Err err_;
 };
 
 enum class ExprType {
