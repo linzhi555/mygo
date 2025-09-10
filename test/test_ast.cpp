@@ -6,7 +6,7 @@
 
 TEST(IfAst, error) {
   std::string src = R"(
-func judge a int) {
+func judge (a int {
     if  a > 89 {
         print(a," your score is A")
         return

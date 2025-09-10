@@ -1,8 +1,8 @@
 #pragma once
 
 #include "ast.h"
-#include "bytecode.h"
 #include "unordered_map"
+#include "vm.h"
 namespace mygo {
 
 using TypeId = int32_t;
@@ -17,6 +17,8 @@ struct Var {
 
   const Scope global_scope = "::";
 
+  std::string debug();
+
   static bool inScope(const Scope& a, const Scope& b) {
     return b.starts_with(a);
   }
@@ -29,8 +31,10 @@ struct Var {
 struct FuncInfo {
   std::vector<Var> locals;
   std::vector<Instruction> instructions;
-  FuncInfo();
-  ~FuncInfo();
+
+  std::string debug();
+  FuncInfo() = default;
+  ~FuncInfo() = default;
 };
 
 struct TypeInfo {
@@ -44,13 +48,14 @@ struct TypeInfo {
   TypeInfo(TypeInfo&&) = default;
   TypeInfo(TypeInfo&) = default;
   TypeInfo() = default;
-
+  std::string debug();
   bool isAliasType() { return alias_type >= 0; }
 };
 
 class TypeTable {
  public:
   TypeTable();
+  std::string debug();
 
  private:
   void initBasicInfos();
@@ -61,10 +66,9 @@ class TypeTable {
 
 class Compiler {
   Program program_;
-  std::vector<TypeInfo> type_infos_;
+  TypeTable type_infos_;
   std::vector<Var> global_infos_;
   std::vector<FuncInfo> func_infos_;
-
 
   void compile_func(const ast::Function& func);
 
@@ -74,6 +78,7 @@ class Compiler {
   void link();
 
  public:
+  std::string debug();
   Compiler() = default;
   void compile(const ast::Root& ast);
 };

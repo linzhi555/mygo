@@ -33,7 +33,7 @@ set( LIB_SOURCES
 
         ./src/loop/loop.cpp
         ./src/loop/task.cpp
-
+        ./src/compiler.cc
         ./src/vm.cpp
         ./src/token.cpp
         ./src/token_stream.cpp
@@ -74,3 +74,8 @@ target_link_libraries(test_struct GTest::gtest_main mygodev)
 
 add_executable(test_ast test/test_ast.cpp)
 target_link_libraries(test_ast GTest::gtest_main mygodev)
+
+add_executable(test_compiler test/test_compiler.cpp)
+target_link_libraries(test_compiler GTest::gtest_main mygodev)
+
+
