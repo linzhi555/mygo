@@ -3,7 +3,6 @@
 #include <optional>
 #include <vector>
 
-#include "logging.h"
 #include "token.h"
 
 namespace mygo {
@@ -31,8 +30,8 @@ std::optional<token::Value> TokenStream::Peek() {
 
   if (!v) return v;
 
-  LOG(INFO) << cache_.value() << cache_.value().start.ToString()
-            << cache_.value().end.ToString();
+  // LOG(INFO) << cache_.value() << cache_.value().start.ToString()
+  //           << cache_.value().end.ToString();
 
   return v;
 }

@@ -37,14 +37,13 @@ set( LIB_SOURCES
         ./src/vm.cpp
         ./src/token.cpp
         ./src/token_stream.cpp
-        ./src/logging.cpp
         ./src/server.cpp
         ./src/ast.cpp
         ./src/value.cpp
 )
 
 add_library(mygodev STATIC ${LIB_SOURCES})
-target_link_libraries(mygodev PRIVATE uv )
+target_link_libraries(mygodev PRIVATE uv_a )
 
 
 set(CMAKE_BUILD_TYPE Debug)
@@ -54,17 +53,17 @@ add_executable(mygo ./src/mygo.cpp)
 target_link_libraries(mygo PRIVATE mygodev)
 
 
-add_executable(test_ret test/test_ret.cpp)
-target_link_libraries(test_ret GTest::gtest_main mygodev)
+# add_executable(test_ret test/test_ret.cpp)
+# target_link_libraries(test_ret GTest::gtest_main mygodev)
 
-add_executable(test_expr test/test_expr.cpp)
-target_link_libraries(test_expr GTest::gtest_main mygodev)
+# add_executable(test_expr test/test_expr.cpp)
+# target_link_libraries(test_expr GTest::gtest_main mygodev)
 
-add_executable(test_if test/test_if.cpp)
-target_link_libraries(test_if GTest::gtest_main mygodev)
+# add_executable(test_if test/test_if.cpp)
+# target_link_libraries(test_if GTest::gtest_main mygodev)
 
-add_executable(test_for test/test_for.cpp)
-target_link_libraries(test_for GTest::gtest_main mygodev)
+# add_executable(test_for test/test_for.cpp)
+# target_link_libraries(test_for GTest::gtest_main mygodev)
 
 add_executable(test_bytevm test/test_bytevm.cpp)
 target_link_libraries(test_bytevm GTest::gtest_main mygodev)

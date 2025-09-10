@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 #include "ast.h"
-#include "logging.h"
 #include "vm.h"
 
 TEST(IfAst, error) {

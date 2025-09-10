@@ -7,8 +7,6 @@
 #include <string>
 #include <utility>
 
-#include "logging.h"
-
 #define SKIP_TOKEN(S, T)                             \
   while (S.Peek() && S.Peek().value().type() == T) { \
     S.Next();                                        \
@@ -419,7 +417,7 @@ Result<Function> Function::parse(TokenStream& stream) {
     token::Value temp;
 
     if (stream.Peek()->type() != token::Type::Symbol) {
-      LOG(INFO) << "finish  func arguments parse " << func_name << std::endl;
+      // LOG(INFO) << "finish  func arguments parse " << func_name << std::endl;
       break;
     }
     EXPECT_GET_TOKEN(stream, token::Type::Symbol, "need symbol", temp);
@@ -533,7 +531,7 @@ Result<For> For::parse(TokenStream& stream) {
     for_node->init_stmt_ = std::move(decl);
   }
 
-  std::cout << stream.Peek()->debug() << std::endl;
+  // std::cout << stream.Peek()->debug() << std::endl;
   EXPECT_TOKEN(stream, token::Type::Semicolon);
   // EXPECT_TOKEN(stream, token::Type::Comma);
   //  SKIP_TOKEN(stream, token::Type::Enl);
@@ -635,7 +633,7 @@ Result<Typedef> Typedef::parse(TokenStream& stream) {
 
   Result<VarType> var_type = VarType::parse(stream);
   if (var_type.isErr()) {
-    std::cout << "expect var_type" << std::endl;
+    // std::cout << "expect var_type" << std::endl;
     return Err(stream.loc(), "expect var_type");
   }
   res->var_type_ = var_type.takeValue();

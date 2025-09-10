@@ -1,26 +1,24 @@
+#include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <ostream>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "ast.h"
-#include "logging.h"
 #include "server.h"
 #include "token_stream.h"
-#include "vm.h"
 
-// std::string src = R"(var a=1
-// print("hello world","123",123)
-//)";
+#include <spdlog/spdlog.h>
+
+
 
 int main(int argc, char** argv) {
-  set_debug_level(NOLOG);
-  // set_debug_level(INFO);
-  LOG(INFO) << "args";
+  spdlog::info("hellowlrd");
+
   for (int i = 0; i < argc; i++) {
-    LOG(INFO) << " " << argv[i];
   }
 
   if (argc == 2 && std::string(argv[1]) == "--help") {
@@ -40,7 +38,7 @@ int main(int argc, char** argv) {
 
   std::ifstream fstream(file);
   if (!fstream.is_open()) {
-    LOG(ERROR) << "fail to read file" << std::endl;
+    spdlog::error("file open fail");
     return -1;
   }
   std::ostringstream oss;
@@ -50,15 +48,11 @@ int main(int argc, char** argv) {
   std::vector<uint8_t> src_data(src.begin(), src.end());
 
   auto stream = mygo::TokenStream(std::move(src_data));
-  mygo::VM vm;
   mygo::ast::Result<mygo::ast::Root> root_res = mygo::ast::Root::parse(stream);
   if (root_res.isOk()) {
     mygo::ast::NodePtr<mygo::ast::Root> root = root_res.takeValue();
-    LOG(INFO) << "root ast: " << root->block_->nodes_.size() << root->debug()
-              << std::endl;
-    vm.run(root);
-    // std::cout << root.value()->debug() << std::endl;
+    spdlog::info(root->debug());
   } else {
-    std::cout << "parse error:" << root_res.takeErr().toString() << std::endl;
+    spdlog::info(root_res.takeErr().toString());
   }
 }
