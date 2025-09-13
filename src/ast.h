@@ -61,6 +61,7 @@ class Err {
   }
 
   bool isFatal() { return is_fatal_; }
+  void setFatal() { is_fatal_ = true; }
 
   int depth() { return err_stack_.size(); }
 
@@ -96,7 +97,10 @@ class Result {
   Result(Err e) { err_ = e; }
 
   Result& operator=(const Result&) = default;
-  Result& operator=(NodePtr<T>&& value) { value_ = std::move(value); }
+  Result& operator=(NodePtr<T>&& value) {
+    value_ = std::move(value);
+    return *this;
+  }
   Result(NodePtr<T>&& value) { value_ = std::move(value); }
 
   bool isOk() { return value_.get() != nullptr; };
@@ -353,7 +357,6 @@ class For : public Node {
   static Result<For> parse(TokenStream& stream);
 };
 
-// TODO: need implement struct node
 class Struct : public Node {
  public:
   using Field = std::pair<std::string, std::string>;
@@ -374,6 +377,12 @@ class VarType : public Node {
   std::string name_;
 
  public:
+  bool is_struct() { return is_struct_; }
+
+  const Struct& asStruct() {
+    assert(stct_ != nullptr);
+    return *stct_.get();
+  }
   enum Type type() override { return Type::VarType; };
   std::string debug() override;
   static Result<VarType> parse(TokenStream& stream);
@@ -381,8 +390,8 @@ class VarType : public Node {
 
 class Typedef : public Node {
  public:
-  std::string name_;
-  std::unique_ptr<VarType> var_type_;
+  std::string new_name_;
+  std::unique_ptr<VarType> old_type_;
 
   enum Type type() override { return Type::Typedef; };
   std::string debug() override;

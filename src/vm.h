@@ -131,8 +131,8 @@ struct Program {
 
   void AddInstruction(Instruction insc) { instructions.push_back(insc); }
 
-  void Save(std::string _) {}
-  void Load(std::string _) {}
+  void Save(std::string) {}
+  void Load(std::string) {}
 };
 
 inline uint64_t f32u64(float f) {

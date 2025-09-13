@@ -72,7 +72,7 @@ Result<Node> NodeParseFunc(TokenStream& stream) {
 
   NodePtr<Node> node = res.takeValue();
 
-  return std::move(node);
+  return node;
 }
 }  // namespace
 
@@ -92,7 +92,7 @@ Result<Return> Return::parse(TokenStream& stream) {
   }
 
   guard.finish(res->start, res->end);
-  return std::move(res);
+  return res;
 }
 
 Result<Block> Block::parse(TokenStream& stream) {
@@ -135,7 +135,7 @@ Result<Block> Block::parse(TokenStream& stream) {
   };
 
   guard.finish(res->start, res->end);
-  return std::move(res);
+  return res;
 };
 
 Result<Root> Root::parse(TokenStream& stream) {
@@ -153,7 +153,7 @@ Result<Root> Root::parse(TokenStream& stream) {
   EXPECT_TOKEN(stream, token::Type::Enf);
 
   guard.finish(res->start, res->end);
-  return std::move(res);
+  return res;
 }
 
 Result<Declaration> Declaration::parse(TokenStream& stream) {
@@ -174,7 +174,7 @@ Result<Declaration> Declaration::parse(TokenStream& stream) {
   res->expr = e.takeValue();
 
   guard.finish(res->start, res->end);
-  return std::move(res);
+  return res;
 }
 
 Result<Assignment> Assignment::parse(TokenStream& stream) {
@@ -194,7 +194,7 @@ Result<Assignment> Assignment::parse(TokenStream& stream) {
   res->expr = e.takeValue();
 
   guard.finish(res->start, res->end);
-  return std::move(res);
+  return res;
 }
 
 Result<Expr> Expr::parse(TokenStream& stream) {
@@ -212,7 +212,7 @@ Result<Expr> Expr::parse_with_greater(TokenStream& stream) {
   if (t != token::Type::Greater && t != token::Type::Less &&
       t != token::Type::Equal) {
     guard.finish(expr0->start, expr0->end);
-    return std::move(expr0);
+    return expr0;
   }
 
   stream.Next();
@@ -227,7 +227,7 @@ Result<Expr> Expr::parse_with_greater(TokenStream& stream) {
   multi->exprs.push_back(expr1_res.takeValue());
 
   guard.finish(multi->start, multi->end);
-  return std::move(multi);
+  return multi;
 }
 
 Result<Expr> Expr::parse_with_plus(TokenStream& stream) {
@@ -264,7 +264,7 @@ Result<Expr> Expr::parse_with_plus(TokenStream& stream) {
   }
 
   guard.finish(multi->start, multi->end);
-  return std::move(multi);
+  return multi;
 }
 
 Result<Expr> Expr::parse_with_star(TokenStream& stream) {
@@ -302,7 +302,7 @@ Result<Expr> Expr::parse_with_star(TokenStream& stream) {
   }
 
   guard.finish(multi->start, multi->end);
-  return std::move(multi);
+  return multi;
 }
 
 // TODO: not atomic!!! need rename
@@ -356,7 +356,7 @@ Result<Expr> Expr::parse_token(TokenStream& stream) {
 
       NodePtr<Expr> res = MakeAtomic(v.value());
       guard.finish(res->start, res->end);
-      return std::move(res);
+      return res;
     }
 
     default:
@@ -394,7 +394,7 @@ Result<Expr> Expr::parse_funcall(TokenStream& stream) {
   EXPECT_TOKEN(stream, token::Type::RParent);
 
   guard.finish(res->start, res->end);
-  return std::move(res);
+  return res;
 };
 
 Result<Function> Function::parse(TokenStream& stream) {
@@ -459,7 +459,7 @@ Result<Function> Function::parse(TokenStream& stream) {
   func_node->block = block_res.takeValue();
 
   guard.finish(func_node->start, func_node->end);
-  return std::move(func_node);
+  return func_node;
 }
 
 Result<If> If::parse(TokenStream& stream) {
@@ -516,7 +516,7 @@ Result<If> If::parse(TokenStream& stream) {
   }
 
   guard.finish(if_node->start, if_node->end);
-  return std::move(if_node);
+  return if_node;
 }
 
 Result<For> For::parse(TokenStream& stream) {
@@ -565,7 +565,7 @@ Result<For> For::parse(TokenStream& stream) {
   for_node->block_ = block_res.takeValue();
 
   guard.finish(for_node->start, for_node->end);
-  return std::move(for_node);
+  return for_node;
 }
 
 std::string For::debug() {
@@ -611,7 +611,14 @@ Result<VarType> VarType::parse(TokenStream& stream) {
     res->stct_ = stct.takeValue();
     guard.finish(res->start, res->end);
 
-    return std::move(res);
+    return res;
+  } else {
+    if (stream.Peek() && stream.Peek()->type() == token::Type::Symbol) {
+      res->name_ = stream.Peek()->str();
+      stream.Next();
+      guard.finish(res->start, res->end);
+    }
+    return res;
   }
 
   return Err(stream.loc(), "parse var type error");
@@ -619,9 +626,9 @@ Result<VarType> VarType::parse(TokenStream& stream) {
 
 std::string Typedef::debug() {
   std::string res = "Typedef\n";
-  res += var_type_->debug();
+  res += old_type_->debug();
   res += " ";
-  res += name_;
+  res += new_name_;
   return res;
 }
 
@@ -633,18 +640,21 @@ Result<Typedef> Typedef::parse(TokenStream& stream) {
 
   Result<VarType> var_type = VarType::parse(stream);
   if (var_type.isErr()) {
-    // std::cout << "expect var_type" << std::endl;
-    return Err(stream.loc(), "expect var_type");
+    Err err = Err::Append(var_type.takeErr(), stream.loc(),
+                          "parsing var_type error when parsing typedef");
+
+    err.setFatal();
+    return err;
   }
-  res->var_type_ = var_type.takeValue();
+  res->old_type_ = var_type.takeValue();
 
   if (stream.Peek()->type() == token::Type::Symbol) {
-    res->name_ = stream.Peek()->str();
+    res->new_name_ = stream.Peek()->str();
     stream.Next();
     guard.finish(res->start, res->end);
-    return std::move(res);
+    return res;
   } else {
-    return Err(stream.loc(), "expect name in typedef");
+    return Err::Fatal(stream.loc(), "expect name in typedef");
   }
 }
 
@@ -682,7 +692,7 @@ Result<Struct> Struct::parse(TokenStream& stream) {
   EXPECT_TOKEN(stream, token::Type::RBrace);
 
   guard.finish(res->start, res->end);
-  return std::move(res);
+  return res;
 }
 
 std::string Struct::debug() {

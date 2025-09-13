@@ -9,6 +9,7 @@ TEST(Compiler, compile) {
 var a = 11
 var times = 1000
 
+type int myint
 
 type struct{
     name string

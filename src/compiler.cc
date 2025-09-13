@@ -2,18 +2,40 @@
 
 #include <spdlog/spdlog.h>
 
+#include <cassert>
+#include <string>
+
 namespace mygo {
 
 std::string VarInfo::debug() {
   std::string res;
   res += name;
+  res += std::to_string(type_id);
   return res;
 }
 
 std::string TypeInfo::debug() {
   std::string res;
-  res += type_id;
+  res += std::to_string(type_id);
+  res += " ";
   res += name;
+  res += " ";
+  res += std::to_string(size);
+  if (is_struct) {
+    res += " is_struct:yes";
+    res += " fields:";
+    for (Field field : fields) {
+      res += "[";
+      res += std::to_string(field.first);
+      res += " ";
+      res += field.second;
+      res += "]";
+    }
+
+  } else {
+    res += " is_struct:no";
+  }
+
   res += "\n";
   return res;
 }
@@ -43,7 +65,7 @@ void TypeTable::initBasicInfos() {
 
   temp.type_id = 30;
   temp.size = 4;
-  temp.name = "float";
+  temp.name = "float32";
   insert(temp);
 
   temp.type_id = 40;
@@ -54,6 +76,25 @@ void TypeTable::initBasicInfos() {
 
 void TypeTable::insert(TypeInfo info) {
   type_table_.insert({info.type_id, std::move(info)});
+}
+
+TypeId TypeTable::max_type_id() {
+  TypeId max = -1;
+  for (auto& [id, _] : type_table_) {
+    if (id > max) {
+      max = id;
+    }
+  }
+  return max;
+}
+
+TypeInfo* TypeTable::findByName(std::string_view name) {
+  for (auto& [_, type] : type_table_) {
+    if (type.name == name) {
+      return &type;
+    }
+  }
+  return nullptr;
 }
 
 std::string TypeTable::debug() {
@@ -111,7 +152,22 @@ void Compiler::compile_types(const ast::Root& ast) {
     if (node->type() == ast::Type::Typedef) {
       ast::Typedef* tf = static_cast<ast::Typedef*>(node.get());
       TypeInfo type_info;
-      type_info.name = tf->name_;
+
+      type_info.type_id = type_table_.max_type_id() + 10;
+      type_info.name = tf->new_name_;
+      if (tf->old_type_->is_struct()) {
+        type_info.is_struct = true;
+        const ast::Struct& stct = tf->old_type_->asStruct();
+
+        type_info.size = 0;
+        for (auto [fileld_name, type_str] : stct.fields_) {
+          TypeInfo* field_type_info = type_table_.findByName(type_str);
+          type_info.size += field_type_info->size;
+          assert(field_type_info != nullptr);
+          type_info.fields.push_back({field_type_info->type_id, fileld_name});
+        }
+      }
+
       type_table_.insert(type_info);
     }
   }

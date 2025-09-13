@@ -39,17 +39,19 @@ struct FuncInfo {
 };
 
 struct TypeInfo {
+  using Field = std::pair<TypeId, std::string>;
   TypeId type_id;
   int32_t size = 0;
   std::string name = "";
   bool is_struct = false;
   TypeId alias_type = -1;
-  std::vector<TypeId> subs;
+  std::vector<Field> fields;
 
   TypeInfo(TypeInfo&&) = default;
   TypeInfo(TypeInfo&) = default;
   TypeInfo() = default;
   std::string debug();
+
   bool isAliasType() { return alias_type >= 0; }
 };
 
@@ -58,6 +60,10 @@ class TypeTable {
   TypeTable();
   std::string debug();
   void insert(TypeInfo info);
+  TypeId max_type_id();
+
+  //return TypeInfo* according the TypeName, nullptr if not found
+  TypeInfo* findByName(std::string_view name);
 
  private:
   void initBasicInfos();
