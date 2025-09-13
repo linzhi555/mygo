@@ -6,13 +6,30 @@
 
 TEST(Compiler, compile) {
   std::string src = R"(
-
 var a = 11
+var times = 1000
+
+
+type struct{
+    name string
+    aget int
+    weight float32
+}Student
+
+
+func add(){
+    var b =  a + 1
+    print(b)
+}
 
 func main(){
     var b =  a + 1
     print(b)
 }
+
+
+
+
 
 )";
 

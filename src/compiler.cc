@@ -1,11 +1,12 @@
 #include "compiler.h"
 
-#include "iostream"
+#include <spdlog/spdlog.h>
+
 namespace mygo {
 
-std::string Var::debug() {
+std::string VarInfo::debug() {
   std::string res;
-
+  res += name;
   return res;
 }
 
@@ -19,6 +20,7 @@ std::string TypeInfo::debug() {
 
 std::string FuncInfo::debug() {
   std::string res;
+  res += this->name;
   return res;
 }
 
@@ -64,41 +66,85 @@ std::string TypeTable::debug() {
   return res;
 }
 
+std::string VarTable::debug() {
+  std::string res;
+  for (VarInfo& var : vars_) {
+    res += var.debug();
+    res += "\n";
+  }
+
+  return res;
+}
+
+void VarTable::insert(VarInfo var) { vars_.push_back(var); }
+
+std::string FuncTable::debug() {
+  std::string res;
+  for (FuncInfo& f : func_infos_) {
+    res += f.debug();
+    res += "\n";
+  }
+
+  return res;
+}
+void FuncTable::insert(FuncInfo f) { func_infos_.push_back(f); }
+
 void Compiler::compile(const ast::Root& ast) {
-  compile_global(ast);
   compile_types(ast);
+  compile_global(ast);
   compile_funcs(ast);
   link();
 }
 
-void Compiler::compile_global(const ast::Root& ast) {}
-void Compiler::compile_types(const ast::Root& ast) {}
+void Compiler::compile_global(const ast::Root& ast) {
+  for (const std::unique_ptr<ast::Node>& node : ast.nodes()) {
+    if (node->type() == ast::Type::Declaration) {
+      VarInfo var;
+      var.name = static_cast<ast::Declaration*>(node.get())->var_name;
+      global_table_.insert(var);
+    }
+  }
+}
+
+void Compiler::compile_types(const ast::Root& ast) {
+  for (const std::unique_ptr<ast::Node>& node : ast.nodes()) {
+    if (node->type() == ast::Type::Typedef) {
+      ast::Typedef* tf = static_cast<ast::Typedef*>(node.get());
+      TypeInfo type_info;
+      type_info.name = tf->name_;
+      type_table_.insert(type_info);
+    }
+  }
+}
+
 void Compiler::compile_funcs(const ast::Root& ast) {
-  for (std::unique_ptr<ast::Node>& node : ast.block_->nodes_) {
+  for (const std::unique_ptr<ast::Node>& node : ast.nodes()) {
     if (node->type() == ast::Type::Function) {
       compile_func(*static_cast<ast::Function*>(node.get()));
     }
   }
 }
 
-void Compiler::compile_func(const ast::Function& func) {}
+void Compiler::compile_func(const ast::Function& func) {
+  FuncInfo f;
+  f.name = func.func_name;
+  func_table_.insert(f);
+}
+
 void Compiler::link() {}
 std::string Compiler::debug() {
   std::string res;
 
   res += "------TYPES------\n";
 
-  res += type_infos_.debug();
+  res += type_table_.debug();
 
   res += "------GLOBALS------\n";
-  for (Var& var : global_infos_) {
-    res += var.debug();
-  }
+  res += global_table_.debug();
 
   res += "------FUNCINFOS------\n";
-  for (FuncInfo& finfo : func_infos_) {
-    res += finfo.debug();
-  }
+  res += func_table_.debug();
+
   return res;
 }
 

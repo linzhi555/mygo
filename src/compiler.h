@@ -7,7 +7,7 @@ namespace mygo {
 
 using TypeId = int32_t;
 
-struct Var {
+struct VarInfo {
   using Type = std::string;
   using Scope = std::string;
   std::string name;
@@ -29,7 +29,8 @@ struct Var {
 };
 
 struct FuncInfo {
-  std::vector<Var> locals;
+  std::string name;
+  std::vector<VarInfo> locals;
   std::vector<Instruction> instructions;
 
   std::string debug();
@@ -56,19 +57,37 @@ class TypeTable {
  public:
   TypeTable();
   std::string debug();
+  void insert(TypeInfo info);
 
  private:
   void initBasicInfos();
 
-  void insert(TypeInfo info);
   std::unordered_map<TypeId, TypeInfo> type_table_;
+};
+
+class VarTable {
+ public:
+  void insert(VarInfo);
+  std::string debug();
+
+ private:
+  std::vector<VarInfo> vars_;
+};
+
+class FuncTable {
+ public:
+  void insert(FuncInfo);
+  std::string debug();
+
+ private:
+  std::vector<FuncInfo> func_infos_;
 };
 
 class Compiler {
   Program program_;
-  TypeTable type_infos_;
-  std::vector<Var> global_infos_;
-  std::vector<FuncInfo> func_infos_;
+  TypeTable type_table_;
+  VarTable global_table_;
+  FuncTable func_table_;
 
   void compile_func(const ast::Function& func);
 

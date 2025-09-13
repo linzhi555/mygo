@@ -241,13 +241,18 @@ class Block : public Node {
 };
 
 class Root : public Node {
+  NodePtr<Block> block_;
+
  public:
   Root() = default;
   ~Root() override = default;
 
-  NodePtr<Block> block_;
-
   enum Type type() override { return Type::Root; };
+
+  const std::vector<std::unique_ptr<Node>>& nodes() const {
+    return block_->nodes_;
+  }
+
   std::string debug() override { return block_->debug(); }
 
   static Result<Root> parse(TokenStream& stream);
