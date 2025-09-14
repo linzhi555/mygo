@@ -6,10 +6,16 @@
 
 TEST(Compiler, compile) {
   std::string src = R"(
-var a = 11
-var times = 1000
+
+package main
+
+var a float32 = 11
+var times int = 1000
+
+var test_name string = "this is a compiler test"
 
 type int myint
+
 
 type struct{
     name string

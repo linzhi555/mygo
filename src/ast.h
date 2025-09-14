@@ -182,6 +182,39 @@ class Expr : public Node {
   static Result<Expr> parse_funcall(TokenStream& stream);
 };
 
+class Struct : public Node {
+ public:
+  using Field = std::pair<std::string, std::string>;
+  std::string name_;
+  int size_;
+  std::vector<Field> fields_;
+  enum Type type() override { return Type::Struct; };
+  std::string debug() override;
+  static Result<Struct> parse(TokenStream& stream);
+};
+
+class VarType : public Node {
+  bool is_struct_ = false;
+  std::unique_ptr<Struct> stct_;
+
+  bool is_list_ = false;
+  bool is_map_ = false;
+  std::string name_;
+
+ public:
+  bool is_struct() { return is_struct_; }
+
+  std::string name() { return name_; }
+
+  const Struct& asStruct() {
+    assert(stct_ != nullptr);
+    return *stct_.get();
+  }
+  enum Type type() override { return Type::VarType; };
+  std::string debug() override;
+  static Result<VarType> parse(TokenStream& stream);
+};
+
 class Declaration : public Node {
  public:
   Declaration() = default;
@@ -189,6 +222,7 @@ class Declaration : public Node {
 
   bool is_const;
   std::string var_name;
+  NodePtr<VarType> var_type;
   NodePtr<Expr> expr;
 
   enum Type type() override { return Type::Declaration; };
@@ -200,6 +234,10 @@ class Declaration : public Node {
     s += "Declaration: ";
     s += var_name;
     s += " ";
+    if (var_type != nullptr) {
+      s += var_type->debug();
+    }
+
     s += expr->debug();
     return s;
   }
@@ -357,41 +395,10 @@ class For : public Node {
   static Result<For> parse(TokenStream& stream);
 };
 
-class Struct : public Node {
- public:
-  using Field = std::pair<std::string, std::string>;
-  std::string name_;
-  int size_;
-  std::vector<Field> fields_;
-  enum Type type() override { return Type::Struct; };
-  std::string debug() override;
-  static Result<Struct> parse(TokenStream& stream);
-};
-
-class VarType : public Node {
-  bool is_struct_ = false;
-  std::unique_ptr<Struct> stct_;
-
-  bool is_list_ = false;
-  bool is_map_ = false;
-  std::string name_;
-
- public:
-  bool is_struct() { return is_struct_; }
-
-  const Struct& asStruct() {
-    assert(stct_ != nullptr);
-    return *stct_.get();
-  }
-  enum Type type() override { return Type::VarType; };
-  std::string debug() override;
-  static Result<VarType> parse(TokenStream& stream);
-};
-
 class Typedef : public Node {
  public:
   std::string new_name_;
-  std::unique_ptr<VarType> old_type_;
+  NodePtr<VarType> old_type_;
 
   enum Type type() override { return Type::Typedef; };
   std::string debug() override;

@@ -53,6 +53,16 @@
     S.Next();                                                           \
   }
 
+#define EXPECT_GET_TOKEN_FATAL(S, T, ERR, RES)                                 \
+  if (!S.Peek())                                                               \
+    return Err::Fatal(S.loc(), std::string("expect token but get null") + #T); \
+  if (S.Peek().value().type() != T) {                                          \
+    return Err::Fatal(S.loc(), std::string("expect token ") + #T);             \
+  } else {                                                                     \
+    RES = S.Peek().value();                                                    \
+    S.Next();                                                                  \
+  }
+
 namespace mygo {
 namespace ast {
 
@@ -163,8 +173,13 @@ Result<Declaration> Declaration::parse(TokenStream& stream) {
   EXPECT_TOKEN(stream, token::Type::Var)
 
   token::Value v;
-  EXPECT_GET_TOKEN(stream, token::Type::Symbol, "expect symbol", v);
+  EXPECT_GET_TOKEN_FATAL(stream, token::Type::Symbol, "expect symbol", v);
   res->var_name = v.str();
+
+  Result<VarType> var_type_res = VarType::parse(stream);
+  if (var_type_res.isOk()) {
+    res->var_type = var_type_res.takeValue();
+  }
 
   EXPECT_TOKEN(stream, token::Type::Assign)
 
@@ -183,7 +198,7 @@ Result<Assignment> Assignment::parse(TokenStream& stream) {
   auto res = std::make_unique<Assignment>();
 
   token::Value v;
-  EXPECT_GET_TOKEN(stream, token::Type::Symbol, "expect symbol", v);
+  EXPECT_GET_TOKEN(stream, token::Type::Symbol, "expect var name", v);
   res->var_name = v.str();
 
   EXPECT_TOKEN(stream, token::Type::Assign)
@@ -420,9 +435,9 @@ Result<Function> Function::parse(TokenStream& stream) {
       // LOG(INFO) << "finish  func arguments parse " << func_name << std::endl;
       break;
     }
-    EXPECT_GET_TOKEN(stream, token::Type::Symbol, "need symbol", temp);
+    EXPECT_GET_TOKEN_FATAL(stream, token::Type::Symbol, "need symbol", temp);
     val_name = temp.str();
-    EXPECT_GET_TOKEN(stream, token::Type::Symbol, "need symbol", temp);
+    EXPECT_GET_TOKEN_FATAL(stream, token::Type::Symbol, "need symbol", temp);
     val_t = temp.str();
 
     SKIP_TOKEN_ONCE(stream, token::Type::Comma);
@@ -592,11 +607,15 @@ std::string For::debug() {
 };
 
 std::string VarType::debug() {
-  std::string res = "VarType\n";
+  std::string res = "VarType(";
 
   if (is_struct_) {
     res += stct_->debug();
+  } else {
+    res += name_;
   }
+
+  res += ")";
 
   return res;
 }

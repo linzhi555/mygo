@@ -97,6 +97,14 @@ TypeInfo* TypeTable::findByName(std::string_view name) {
   return nullptr;
 }
 
+TypeInfo* TypeTable::findById(TypeId id) {
+  if (type_table_.end() == type_table_.find(id)) {
+    return nullptr;
+  }
+
+  return &type_table_.at(id);
+}
+
 std::string TypeTable::debug() {
   std::string res;
   for (auto& [_, t] : type_table_) {
@@ -141,7 +149,18 @@ void Compiler::compile_global(const ast::Root& ast) {
   for (const std::unique_ptr<ast::Node>& node : ast.nodes()) {
     if (node->type() == ast::Type::Declaration) {
       VarInfo var;
-      var.name = static_cast<ast::Declaration*>(node.get())->var_name;
+      ast::Declaration* decl = static_cast<ast::Declaration*>(node.get());
+      var.name = decl->var_name;
+      if (decl->var_type != nullptr) {
+        const TypeInfo* tf = type_table_.findByName(decl->var_type->name());
+        assert(tf);
+
+        var.type_id = tf->type_id;
+
+      } else {
+        assert("temporaily declcation must have type");
+      }
+
       global_table_.insert(var);
     }
   }

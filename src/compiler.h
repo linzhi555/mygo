@@ -62,8 +62,10 @@ class TypeTable {
   void insert(TypeInfo info);
   TypeId max_type_id();
 
-  //return TypeInfo* according the TypeName, nullptr if not found
+  // return TypeInfo* according the TypeName, nullptr if not found
   TypeInfo* findByName(std::string_view name);
+
+  TypeInfo* findById(TypeId id);
 
  private:
   void initBasicInfos();
@@ -95,6 +97,9 @@ class Compiler {
   VarTable global_table_;
   FuncTable func_table_;
 
+  using Error = std::string;
+  std::vector<Error> errors_;
+
   void compile_func(const ast::Function& func);
 
   void compile_global(const ast::Root& ast);
@@ -103,8 +108,11 @@ class Compiler {
   void link();
 
  public:
-  std::string debug();
   Compiler() = default;
+  bool hasError();
+  std::vector<Error>& errors();
+  std::string debug();
+  const Program& getResult();
   void compile(const ast::Root& ast);
 };
 
