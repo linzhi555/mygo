@@ -126,7 +126,6 @@ struct Instruction {
 struct Program {
   std::string name = "a.myout";
 
-  std::vector<uint8_t> rom;
   std::vector<Instruction> instructions;
 
   void AddInstruction(Instruction insc) { instructions.push_back(insc); }
@@ -173,22 +172,7 @@ class ByteCodeVM {
     }
   }
 
-  void DebugStack() {
-    const uint64_t line_width = 20;
-    for (int j = 0; j < 200; j += line_width) {
-      for (uint64_t i = j; i < j + line_width; i++) {
-        printf("%3d ", stack_[i]);
-      }
-      printf("\n");
-
-      for (uint64_t i = j; i < j + line_width; i++) {
-        printf("%3d ", (int)i);
-      }
-      printf("\n");
-      printf("\n");
-      printf("\n");
-    }
-  }
+  void debugStack();
 
   uint64_t stack_start() { return stack_start_; }
 
@@ -201,13 +185,15 @@ class ByteCodeVM {
   const uint64_t MAX_HEAP = 1000 * 1000 * 1000;
   const uint64_t MAX_STACK = 1000 * 1000 * 8;
 
+  int static_size_ = 1000 * 1000 * 8;
+
   // program counter
   uint64_t pc_ = 0;
   // stacktop
   uint64_t stack_top_ = 0;
   uint64_t stack_bottom_ = 0;
 
-  uint64_t rom_start_ = 0;
+  uint64_t static_start_ = 0;
   uint64_t stack_start_;
   uint64_t heap_start_;
   uint64_t base_addr_;
@@ -215,8 +201,9 @@ class ByteCodeVM {
   CallStack call_stack_;
   bool finished_ = false;
 
-  uint8_t* heap_;
-  uint8_t* stack_;
+  uint8_t* static_ = nullptr;
+  uint8_t* heap_ = nullptr;
+  uint8_t* stack_ = nullptr;
 };
 
 }  // namespace mygo

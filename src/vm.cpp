@@ -8,22 +8,47 @@
 namespace mygo {
 
 void ByteCodeVM::Init() {
-  rom_start_ = 0;
-  stack_start_ = rom_start_ + program_->rom.size();
+  static_start_ = 0;
+  stack_start_ = static_start_ + static_size_;
   heap_start_ = stack_start_ + MAX_STACK;
   base_addr_ = stack_start_;
 
+  static_ = (uint8_t*)calloc(static_size_, sizeof(uint8_t));
   heap_ = (uint8_t*)calloc(MAX_HEAP, sizeof(uint8_t));
   stack_ = (uint8_t*)calloc(MAX_STACK, sizeof(uint8_t));
 }
 
 ByteCodeVM::~ByteCodeVM() {
+  if (!static_) {
+    free(static_);
+    static_ = nullptr;
+  }
+
   if (!heap_) {
     free(heap_);
+    heap_ = nullptr;
   }
 
   if (!stack_) {
     free(stack_);
+    stack_ = nullptr;
+  }
+}
+
+void ByteCodeVM::debugStack() {
+  const uint64_t line_width = 20;
+  for (int j = 0; j < 200; j += line_width) {
+    for (uint64_t i = j; i < j + line_width; i++) {
+      printf("%3d ", stack_[i]);
+    }
+    printf("\n");
+
+    for (uint64_t i = j; i < j + line_width; i++) {
+      printf("%3d ", (int)i);
+    }
+    printf("\n");
+    printf("\n");
+    printf("\n");
   }
 }
 

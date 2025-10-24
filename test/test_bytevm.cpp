@@ -111,7 +111,7 @@ TEST(ByteVM, cal_pi) {
   vm.Run(UINT64_MAX);
   std::cout << UINT64_MAX << std::endl;
 
-  vm.DebugStack();
+  vm.debugStack();
 }
 
 }  // namespace mygo
