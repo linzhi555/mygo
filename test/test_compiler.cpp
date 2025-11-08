@@ -25,17 +25,17 @@ type struct{
 
 
 func add(){
-    var b =  a + 1
+    var b float32 =  a + 1
+    var c int = 0
+    b = 22.3
+    c = 12
     print(b)
 }
 
 func main(){
-    var b =  a + 1
+    var b int =  a + 1
     print(b)
 }
-
-
-
 
 
 )";
@@ -52,6 +52,7 @@ func main(){
 
   mygo::Compiler compiler;
   compiler.compile(*root.get());
+
 
   spdlog::info(compiler.debug());
 }

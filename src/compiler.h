@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include "ast.h"
 #include "unordered_map"
 #include "vm.h"
@@ -13,9 +15,13 @@ struct VarInfo {
   std::string name;
   TypeId type_id;
   int size;
+  int address;
   Scope scope;
 
   const Scope global_scope = "::";
+
+  VarInfo(const VarInfo&) = default;
+  VarInfo() = default;
 
   std::string debug();
 
@@ -35,7 +41,25 @@ struct FuncInfo {
 
   std::string debug();
   FuncInfo() = default;
+  FuncInfo(FuncInfo&&) = default;
   ~FuncInfo() = default;
+};
+
+struct CompilingFunc {
+  std::string name;
+  int cur_stack_top = 0;
+
+  using Scope = std::unordered_map<std::string, VarInfo>;
+  Scope var_address_map;
+  std::vector<Instruction> instructions;
+
+  std::string debug();
+
+  void addMoveInsts(int dst, int from, int length);
+
+  static FuncInfo FinishCompiling(CompilingFunc&& cp);
+  CompilingFunc() = default;
+  ~CompilingFunc() = default;
 };
 
 struct TypeInfo {
@@ -84,8 +108,10 @@ class VarTable {
 
 class FuncTable {
  public:
-  void insert(FuncInfo);
+  void insert(FuncInfo&&);
   std::string debug();
+
+  const std::vector<FuncInfo>& funcInfos() { return func_infos_; }
 
  private:
   std::vector<FuncInfo> func_infos_;
@@ -96,23 +122,39 @@ class Compiler {
   TypeTable type_table_;
   VarTable global_table_;
   FuncTable func_table_;
+  CompilingFunc* current_func_ = nullptr;
 
   using Error = std::string;
   std::vector<Error> errors_;
 
-  void compile_func(const ast::Function& func);
-
+  int getValSize(std::string_view val_type);
   void compile_global(const ast::Root& ast);
   void compile_types(const ast::Root& ast);
   void compile_funcs(const ast::Root& ast);
+
+  void compile_func(const ast::Function& func);
+  void compile_statement(const ast::Node* stmt);
+  void compile_declaration(const ast::Declaration& decl);
+  void compile_assignment(const ast::Assignment& asgm);
+
+  void compile_expr(const ast::Expr& expr);
+  void compile_literature(const ast::Expr& expr);
+  void compile_funcall(const ast::Expr& expr);
+  void compile_call(std::string_view func_name);
+  void compile_if(const ast::If& iff);
+  void compile_for(const ast::For& forr);
+  void compile_block(const ast::Block& blk);
+
   void link();
 
  public:
+  CompilingFunc* currentFunc() { return current_func_; }
+  void setCurrentFunc(CompilingFunc* f) { current_func_ = f; }
   Compiler() = default;
-  bool hasError();
-  std::vector<Error>& errors();
+  bool hasError() { return !errors_.empty(); };
+  std::vector<Error>& errors() { return errors_; };
   std::string debug();
-  const Program& getResult();
+  const Program& getResult() { return program_; }
   void compile(const ast::Root& ast);
 };
 

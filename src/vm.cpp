@@ -58,6 +58,13 @@ void ByteCodeVM::Run(uint64_t ticks) {
     Instruction& ins = program_->instructions.at(pc_);
 
     switch (ins.op) {
+      case Op::Move: {
+        *(uint8_t*)transAddr(ins.arg0) = *(uint8_t*)transAddr(ins.arg1);
+        pc_++;
+        break;
+      }
+
+
       case Op::Set8: {
         *(uint8_t*)transAddr(ins.arg0) = (uint8_t)ins.arg1;
         pc_++;

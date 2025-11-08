@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 namespace mygo {
@@ -47,6 +48,8 @@ inline Address base(Address addr_type, Address offset) {
 // clang-format on
 
 enum class Op : uint32_t {
+  Move,
+
   Set8,
   Set32,
   Set64,
@@ -114,6 +117,9 @@ enum class Op : uint32_t {
   Call,
   Return,
 
+  Label,
+  Goto,
+
 };
 
 struct Instruction {
@@ -121,6 +127,12 @@ struct Instruction {
   uint64_t arg0;
   uint64_t arg1;
   uint64_t arg2;
+
+  std::string debug() const {
+    std::ostringstream res;
+    res << (uint32_t)op << " " << " " << arg0 << " " << arg1 << " " << arg2;
+    return res.str();
+  }
 };
 
 struct Program {
@@ -136,7 +148,13 @@ struct Program {
 
 inline uint64_t f32u64(float f) {
   uint64_t res = 0;
-  res = *(uint64_t*)(&f);
+  *(float*)&res = f;
+  return res;
+}
+
+inline uint64_t i32u64(int i) {
+  uint64_t res = 0;
+  *(int*)&res = i;
   return res;
 }
 

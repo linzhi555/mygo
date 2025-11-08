@@ -33,7 +33,7 @@ set( LIB_SOURCES
 
         ./src/loop/loop.cpp
         ./src/loop/task.cpp
-        ./src/compiler.cc
+        ./src/compiler.cpp
         ./src/vm.cpp
         ./src/token.cpp
         ./src/token_stream.cpp

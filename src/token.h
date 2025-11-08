@@ -127,12 +127,12 @@ struct Value {
   }
 
   static std::optional<Value> FromChars(CharPtr cur, CharPtr end);
-  Type type() { return type_; }
-  std::string str() { return str_data_; }
-  int len() { return len_; };
+  Type type() const { return type_; }
+  std::string str() const { return str_data_; }
+  int len() const { return len_; };
 
-  double f() { return f_data_; }
-  int i() { return i_data_; }
+  double f() const { return f_data_; }
+  int i() const { return i_data_; }
 
   std::string debug();
 

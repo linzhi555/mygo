@@ -34,7 +34,7 @@ class Node {
   Loc start;
   Loc end;
 
-  virtual enum Type type() = 0;
+  virtual enum Type type() const = 0;
   virtual std::string debug() = 0;
   virtual ~Node() {};
 };
@@ -135,7 +135,7 @@ class Expr : public Node {
   std::vector<NodePtr<Expr>> exprs;
   std::vector<token::Type> ops;
 
-  enum Type type() override { return Type::Expr; };
+  enum Type type() const override { return Type::Expr; };
   Expr(ExprType t) : etype_(t) {};
 
   std::string debug() override {
@@ -188,7 +188,7 @@ class Struct : public Node {
   std::string name_;
   int size_;
   std::vector<Field> fields_;
-  enum Type type() override { return Type::Struct; };
+  enum Type type() const override { return Type::Struct; };
   std::string debug() override;
   static Result<Struct> parse(TokenStream& stream);
 };
@@ -210,7 +210,7 @@ class VarType : public Node {
     assert(stct_ != nullptr);
     return *stct_.get();
   }
-  enum Type type() override { return Type::VarType; };
+  enum Type type() const override { return Type::VarType; };
   std::string debug() override;
   static Result<VarType> parse(TokenStream& stream);
 };
@@ -225,7 +225,7 @@ class Declaration : public Node {
   NodePtr<VarType> var_type;
   NodePtr<Expr> expr;
 
-  enum Type type() override { return Type::Declaration; };
+  enum Type type() const override { return Type::Declaration; };
 
   static Result<Declaration> parse(TokenStream& stream);
 
@@ -251,7 +251,7 @@ class Assignment : public Node {
   std::string var_name;
   NodePtr<Expr> expr;
 
-  enum Type type() override { return Type::Assignment; };
+  enum Type type() const override { return Type::Assignment; };
   std::string debug() override {
     std::string s;
     s += "Assignment:";
@@ -269,7 +269,7 @@ class Block : public Node {
   ~Block() override = default;
   std::vector<std::unique_ptr<Node>> nodes_;
 
-  enum Type type() override { return Type::Block; };
+  enum Type type() const override { return Type::Block; };
   std::string debug() override {
     std::string res;
     for (auto& node : nodes_) {
@@ -289,7 +289,7 @@ class Root : public Node {
   Root() = default;
   ~Root() override = default;
 
-  enum Type type() override { return Type::Root; };
+  enum Type type() const override { return Type::Root; };
 
   const std::vector<std::unique_ptr<Node>>& nodes() const {
     return block_->nodes_;
@@ -304,7 +304,7 @@ class Return : public Node {
  public:
   Return() = default;
   ~Return() override = default;
-  enum Type type() override { return Type::Return; };
+  enum Type type() const override { return Type::Return; };
   std::vector<NodePtr<Expr>> ret_exprs;
   std::string debug() override {
     std::string res;
@@ -328,7 +328,7 @@ class Function : public Node {
   std::vector<std::pair<std::string, std::string>> args;
   std::vector<std::string> returns;
   NodePtr<Block> block;
-  enum Type type() override { return Type::Function; };
+  enum Type type() const override { return Type::Function; };
   std::string debug() override {
     std::string res;
     res += "Function:{\n";
@@ -358,7 +358,7 @@ class If : public Node {
 
   std::optional<NodePtr<Block>> tail_else_;
 
-  enum Type type() override { return Type::If; };
+  enum Type type() const override { return Type::If; };
   std::string debug() override {
     std::string res;
     res += "If:\n";
@@ -390,7 +390,7 @@ class For : public Node {
   std::optional<NodePtr<Assignment>> step_stmp_;
 
   NodePtr<Block> block_;
-  enum Type type() override { return Type::For; };
+  enum Type type() const override { return Type::For; };
   std::string debug() override;
   static Result<For> parse(TokenStream& stream);
 };
@@ -400,7 +400,7 @@ class Typedef : public Node {
   std::string new_name_;
   NodePtr<VarType> old_type_;
 
-  enum Type type() override { return Type::Typedef; };
+  enum Type type() const override { return Type::Typedef; };
   std::string debug() override;
   static Result<Typedef> parse(TokenStream& stream);
 };
