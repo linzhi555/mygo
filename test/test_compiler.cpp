@@ -6,6 +6,17 @@
 
 TEST(Compiler, compile) {
   std::string src = R"(
+func main(){
+
+    var c int = 0
+    c = -1 + 2 + 3
+    print(b)
+}
+  )";
+
+
+
+  std::string src1 = R"(
 
 package main
 
@@ -23,19 +34,26 @@ type struct{
     weight float32
 }Student
 
+func main(){
+    c = -1 + 2 + 3
+    print(b)
+}
 
 func add(){
     var b float32 =  a + 1
     var c int = 0
     b = 22.3
-    c = 12
+    c = -9
+    if true {
+        c = 12 + 11
+    }
+
+    c = 3
+
+
     print(b)
 }
 
-func main(){
-    var b int =  a + 1
-    print(b)
-}
 
 
 )";
@@ -53,6 +71,17 @@ func main(){
   mygo::Compiler compiler;
   compiler.compile(*root.get());
 
+  std::unique_ptr<mygo::Program> program =
+      std::make_unique<mygo::Program>(compiler.getResult());
 
   spdlog::info(compiler.debug());
+  std::cout << program->debug() << std::endl;
+
+  mygo::ByteCodeVM vm(std::move(program));
+
+  spdlog::info("run start");
+  vm.Run(UINT64_MAX);
+  spdlog::info("run end");
+
+  vm.debugStack();
 }

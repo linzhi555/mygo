@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include "spdlog/spdlog.h"
 namespace mygo {
 
 const uint64_t BUILT_IN_START = UINT64_MAX - 10000;
@@ -29,6 +30,7 @@ const Address ROM           = 0x0100000000000000;
 const Address CODE          = 0x0200000000000000;
 const Address STACK_TOP     = 0x0300000000000000;
 const Address STACK_TAIL    = 0x0400000000000000;
+const Address LABEL         = 0x0500000000000000;
 // clang-format on
 
 inline Address base(Address addr_type, Address offset) {
@@ -39,9 +41,9 @@ inline Address base(Address addr_type, Address offset) {
 
 // clang-format off
 #define BinarInstList(OP) \
-  OP(I8,uint8_t) \
-  OP(I32,uint32_t)\
-  OP(I64, uint64_t)\
+  OP(I8,int8_t) \
+  OP(I32,int32_t)\
+  OP(I64, int64_t)\
   OP(F32,float)\
   OP(F64,double)
 
@@ -56,6 +58,12 @@ enum class Op : uint32_t {
 
   // set the size of the stack
   SetStackBottom,
+
+  SavePC,
+  Call,
+  Return,
+
+  Label,
 
 // clang-format off
 #define ADD(INS_TYPE, C_TYPE) Add##INS_TYPE ,
@@ -113,13 +121,6 @@ enum class Op : uint32_t {
   // clang-format on
   //
 
-  SavePC,
-  Call,
-  Return,
-
-  Label,
-  Goto,
-
 };
 
 struct Instruction {
@@ -130,7 +131,8 @@ struct Instruction {
 
   std::string debug() const {
     std::ostringstream res;
-    res << (uint32_t)op << " " << " " << arg0 << " " << arg1 << " " << arg2;
+    res << (uint32_t)op << " " << " " << std::hex << arg0 << " " << arg1 << " "
+        << arg2;
     return res.str();
   }
 };
@@ -141,6 +143,8 @@ struct Program {
   std::vector<Instruction> instructions;
 
   void AddInstruction(Instruction insc) { instructions.push_back(insc); }
+
+  std::string debug() const;
 
   void Save(std::string) {}
   void Load(std::string) {}
@@ -186,6 +190,8 @@ class ByteCodeVM {
       case STACK_TAIL:
         return &stack_[stack_bottom_ + offset];
       default:
+
+        spdlog::critical("can not translate address {:x}, type: {:x} offset: {:x}",addr, type, offset);
         assert("no implement" && false);
     }
   }

@@ -118,6 +118,7 @@ class FuncTable {
 };
 
 class Compiler {
+  int cur_lable_ = 1;
   Program program_;
   TypeTable type_table_;
   VarTable global_table_;
@@ -127,7 +128,7 @@ class Compiler {
   using Error = std::string;
   std::vector<Error> errors_;
 
-  int getValSize(std::string_view val_type);
+  int getExprSize(const ast::Expr& expr);
   void compile_global(const ast::Root& ast);
   void compile_types(const ast::Root& ast);
   void compile_funcs(const ast::Root& ast);
@@ -138,7 +139,9 @@ class Compiler {
   void compile_assignment(const ast::Assignment& asgm);
 
   void compile_expr(const ast::Expr& expr);
-  void compile_literature(const ast::Expr& expr);
+  void compile_expr_literature(const ast::Expr& expr);
+  void compile_expr_ops(const ast::Expr& expr);
+
   void compile_funcall(const ast::Expr& expr);
   void compile_call(std::string_view func_name);
   void compile_if(const ast::If& iff);
@@ -147,6 +150,8 @@ class Compiler {
 
   void link();
 
+  Address alloc_new_label() { return base(LABEL, cur_lable_++); }
+
  public:
   CompilingFunc* currentFunc() { return current_func_; }
   void setCurrentFunc(CompilingFunc* f) { current_func_ = f; }
@@ -154,7 +159,7 @@ class Compiler {
   bool hasError() { return !errors_.empty(); };
   std::vector<Error>& errors() { return errors_; };
   std::string debug();
-  const Program& getResult() { return program_; }
+  Program getResult() { return program_; }
   void compile(const ast::Root& ast);
 };
 

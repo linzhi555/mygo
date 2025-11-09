@@ -7,6 +7,16 @@
 
 namespace mygo {
 
+std::string Program::debug() const{
+  std::string res;
+  for (const Instruction& i : instructions) {
+    res += "\n";
+    res += i.debug();
+  }
+
+  return res;
+}
+
 void ByteCodeVM::Init() {
   static_start_ = 0;
   stack_start_ = static_start_ + static_size_;
@@ -63,7 +73,6 @@ void ByteCodeVM::Run(uint64_t ticks) {
         pc_++;
         break;
       }
-
 
       case Op::Set8: {
         *(uint8_t*)transAddr(ins.arg0) = (uint8_t)ins.arg1;
@@ -212,14 +221,14 @@ void ByteCodeVM::Run(uint64_t ticks) {
         // bultin function
         switch (ins.arg0) {
           case SC_PRINT_I8:
-            printf("%d\n", *(uint8_t*)(transAddr(ins.arg1)));
+            printf("%d\n", *(int8_t*)(transAddr(ins.arg1)));
             break;
           case SC_PRINT_I32:
 
-            printf("%d\n", *(uint32_t*)(transAddr(ins.arg1)));
+            printf("%d\n", *(int32_t*)(transAddr(ins.arg1)));
             break;
           case SC_PRINT_I64:
-            printf("%ld\n", *(uint64_t*)(transAddr(ins.arg1)));
+            printf("%ld\n", *(int64_t*)(transAddr(ins.arg1)));
             break;
           case SC_PRINT_F32:
             printf("%f\n", *(float*)(transAddr(ins.arg1)));

@@ -55,7 +55,7 @@ std::string FuncInfo::debug() {
 void CompilingFunc::addMoveInsts(int dst, int from, int length) {
   for (int i = 0; i < length; i++) {
     instructions.push_back(
-        {Op::Move, base(STACK_TOP, dst), base(STACK_TOP, from), 0});
+        {Op::Move, base(STACK_TOP, dst + i), base(STACK_TOP, from + i), 0});
   }
 }
 
@@ -176,6 +176,8 @@ void Compiler::link() {
   }
 }
 
+int Compiler::getExprSize(const ast::Expr& expr) { return 4; }
+
 void Compiler::compile_global(const ast::Root& ast) {
   for (const std::unique_ptr<ast::Node>& node : ast.nodes()) {
     if (node->type() == ast::Type::Declaration) {
@@ -236,9 +238,8 @@ void Compiler::compile_func(const ast::Function& func) {
   f.name = func.func_name;
 
   setCurrentFunc(&f);
-  for (const std::unique_ptr<ast::Node>& node : func.block->nodes_) {
-    compile_statement(node.get());
-  }
+
+  compile_block(*func.block.get());
 
   func_table_.insert(CompilingFunc::FinishCompiling(std::move(f)));
 }
@@ -318,10 +319,11 @@ void Compiler::compile_expr(const ast::Expr& expr) {
       break;
 
     case ast::ExprType::TOKEN:
-      compile_literature(expr);
+      compile_expr_literature(expr);
       break;
 
     case ast::ExprType::OPS:
+      compile_expr_ops(expr);
       break;
 
     default:
@@ -330,7 +332,7 @@ void Compiler::compile_expr(const ast::Expr& expr) {
   }
 }
 
-void Compiler::compile_literature(const ast::Expr& expr) {
+void Compiler::compile_expr_literature(const ast::Expr& expr) {
   CompilingFunc* cp = currentFunc();
   if (expr.v.type_ == token::Type::Int) {
     cp->instructions.push_back(
@@ -339,6 +341,72 @@ void Compiler::compile_literature(const ast::Expr& expr) {
     cp->instructions.push_back(
         {Op::Set32, base(STACK_TOP, cp->cur_stack_top), f32u64(expr.v.f()), 0});
   }
+}
+
+void Compiler::compile_expr_ops(const ast::Expr& expr) {
+  CompilingFunc* cp = currentFunc();
+
+  int origin_stack_top = cp->cur_stack_top;
+
+  // -(expr) condition like -1 , -2.0 -(1*a)
+  if (expr.ops.size() == 1 && expr.exprs.size() == 1 &&
+      expr.ops[0] == token::Type::Sub) {
+    compile_expr(*expr.exprs[0].get());
+
+    cp->instructions.push_back({Op::MulI32D, base(STACK_TOP, origin_stack_top),
+                                i32u64(-1), base(STACK_TOP, origin_stack_top)}
+
+    );
+
+    goto finish;
+  }
+
+  compile_expr(*expr.exprs[0].get());
+  cp->cur_stack_top += getExprSize(*expr.exprs[0]);
+
+  for (int i = 0; i < expr.ops.size(); i++) {
+    token::Type t = expr.ops[i];
+
+    compile_expr(*expr.exprs[i + 1].get());
+    switch (t) {
+      case token::Type::Plus:
+        cp->instructions.push_back({Op::AddI32,
+                                    base(STACK_TOP, origin_stack_top),
+                                    base(STACK_TOP, cp->cur_stack_top),
+                                    base(STACK_TOP, origin_stack_top)});
+        break;
+      case token::Type::Sub:
+        cp->instructions.push_back({Op::SubI32,
+                                    base(STACK_TOP, origin_stack_top),
+                                    base(STACK_TOP, cp->cur_stack_top),
+                                    base(STACK_TOP, origin_stack_top)});
+
+        break;
+
+      case token::Type::Star:
+        cp->instructions.push_back({Op::MulI32,
+                                    base(STACK_TOP, origin_stack_top),
+                                    base(STACK_TOP, cp->cur_stack_top),
+                                    base(STACK_TOP, origin_stack_top)});
+
+        break;
+
+      case token::Type::Slash:
+        cp->instructions.push_back({Op::DivI32,
+                                    base(STACK_TOP, origin_stack_top),
+                                    base(STACK_TOP, cp->cur_stack_top),
+                                    base(STACK_TOP, origin_stack_top)});
+
+        break;
+
+      default:
+        break;
+    }
+  }
+
+finish:
+
+  cp->cur_stack_top = origin_stack_top;
 }
 
 void Compiler::compile_funcall(const ast::Expr& expr) {
@@ -357,9 +425,25 @@ void Compiler::compile_funcall(const ast::Expr& expr) {
   spdlog::info("call func_name {}", func_name);
 }
 
-void Compiler::compile_call(std::string_view func_name) {}
+void Compiler::compile_call(std::string_view func_name) {
+  CompilingFunc* cp = currentFunc();
+  if (func_name == "print") {
+    cp->instructions.push_back(
+        {Op::Call, mygo::SC_PRINT_I32, base(STACK_TOP, cp->cur_stack_top), 0});
+  }
+}
 
 void Compiler::compile_if(const ast::If& iff) {
+  CompilingFunc* cp = currentFunc();
+
+  Address label = alloc_new_label();
+  cp->instructions.push_back({
+      Op::JumpEqI32,
+      0,
+      0,
+      label,
+  });
+
   for (const ast::If::Branch& b : iff.branches_) {
     compile_block(*b.second.get());
   }
@@ -367,13 +451,24 @@ void Compiler::compile_if(const ast::If& iff) {
   if (iff.tail_else_) {
     compile_block(*iff.tail_else_->get());
   }
+
+  cp->instructions.push_back({
+      Op::Label,
+      label,
+      0,
+      0,
+  });
 }
 
 void Compiler::compile_for(const ast::For& forr) {
   compile_block(*forr.block_.get());
 }
 
-void Compiler::compile_block(const ast::Block& blk) {}
+void Compiler::compile_block(const ast::Block& blk) {
+  for (const std::unique_ptr<ast::Node>& node : blk.nodes_) {
+    compile_statement(node.get());
+  }
+}
 
 std::string Compiler::debug() {
   std::string res;
